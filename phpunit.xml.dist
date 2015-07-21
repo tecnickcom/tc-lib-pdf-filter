@@ -12,7 +12,7 @@
 	verbose="true">
 
 	<testsuites>
-		<testsuite name="ms-lib-pdf-filter Test Suite">
+		<testsuite name="tc-lib-pdf-filter Test Suite">
 			<directory>./test</directory>
 		</testsuite>
 	</testsuites>

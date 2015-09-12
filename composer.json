@@ -1,5 +1,5 @@
 {
-    "name": "tecnick.com/tc-lib-pdf-filter",
+    "name": "tecnickcom/tc-lib-pdf-filter",
     "description": "PHP library to decode PDF compression and encryption filters",
     "type": "library",
     "homepage": "http://www.tecnick.com",

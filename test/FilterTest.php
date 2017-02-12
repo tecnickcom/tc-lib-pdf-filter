@@ -15,6 +15,8 @@
 
 namespace Test;
 
+use PHPUnit\Framework\TestCase;
+
 /**
  * Filter Test
  *
@@ -26,7 +28,7 @@ namespace Test;
  * @license     http://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE.TXT)
  * @link        https://github.com/tecnickcom/tc-lib-pdf-filter
  */
-class FilterTest extends \PHPUnit_Framework_TestCase
+class FilterTest extends TestCase
 {
     protected $obj = null;
 
@@ -42,9 +44,11 @@ class FilterTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('tc-lib-pdf-filter', $result);
     }
 
+    /**
+     * @expectedException \Com\Tecnick\Pdf\Filter\Exception
+     */
     public function testUnknownFilter()
     {
-        $this->setExpectedException('\Com\Tecnick\Pdf\Filter\Exception');
         $this->obj->decode('Unknown', 'YZ');
     }
 
@@ -61,15 +65,22 @@ class FilterTest extends \PHPUnit_Framework_TestCase
         $code = '30 31 32 33 34 35 36 37 38 39 9>';
         $result = $this->obj->decode('ASCIIHexDecode', $code);
         $this->assertEquals("0123456789\t", $result);
+    }
 
-        $this->setExpectedException('\Com\Tecnick\Pdf\Filter\Exception');
+    /**
+     * @expectedException \Com\Tecnick\Pdf\Filter\Exception
+     */
+    public function testAsciiHexEx()
+    {
         $code = '30 31 32 33 34 35 36 37 38 39 9';
         $this->obj->decode('ASCIIHexDecode', $code);
     }
 
+    /**
+     * @expectedException \Com\Tecnick\Pdf\Filter\Exception
+     */
     public function testAsciiHexException()
     {
-        $this->setExpectedException('\Com\Tecnick\Pdf\Filter\Exception');
         $this->obj->decode('ASCIIHexDecode', 'YZ 34 HJ>');
     }
     
@@ -78,8 +89,13 @@ class FilterTest extends \PHPUnit_Framework_TestCase
         $code = '<~FCQn=BjrZ5A7dE*Bl%m&EW~>';
         $result = $this->obj->decode('ASCII85Decode', $code);
         $this->assertEquals('tc-lib-pdf-filter', $result);
+    }
 
-        $this->setExpectedException('\Com\Tecnick\Pdf\Filter\Exception');
+    /**
+     * @expectedException \Com\Tecnick\Pdf\Filter\Exception
+     */
+    public function testAsciiEightFiveEx()
+    {
         $this->obj->decode('ASCII85Decode', chr(254));
     }
 
@@ -88,8 +104,13 @@ class FilterTest extends \PHPUnit_Framework_TestCase
         $code ="\x78\x9c\x2b\x49\xd6\xcd\xc9\x4c\xd2\x2d\x48\x49\xd3\x4d\xcb\xcc\x29\x49\x2d\x2\x0\x37\x64\x6\x56";
         $result = $this->obj->decode('FlateDecode', $code);
         $this->assertEquals('tc-lib-pdf-filter', $result);
+    }
 
-        $this->setExpectedException('\Com\Tecnick\Pdf\Filter\Exception');
+    /**
+     * @expectedException \Com\Tecnick\Pdf\Filter\Exception
+     */
+    public function testFlateEx()
+    {
         $this->obj->decode('FlateDecode', 'ABC');
     }
     
@@ -99,34 +120,44 @@ class FilterTest extends \PHPUnit_Framework_TestCase
         $result = $this->obj->decode('RunLengthDecode', $code);
         $this->assertEquals('AAAAAAAAAA tc-lib-pdf-filter BBBBBBBBBB', $result);
     }
-    
+
+    /**
+     * @expectedException \Com\Tecnick\Pdf\Filter\Exception
+     */
     public function testCcittFax()
     {
-        $this->setExpectedException('\Com\Tecnick\Pdf\Filter\Exception');
         $this->obj->decode('CCITTFaxDecode', '');
     }
-    
+
+    /**
+     * @expectedException \Com\Tecnick\Pdf\Filter\Exception
+     */
     public function testJbigTwo()
     {
-        $this->setExpectedException('\Com\Tecnick\Pdf\Filter\Exception');
         $this->obj->decode('JBIG2Decode', '');
     }
-    
+
+    /**
+     * @expectedException \Com\Tecnick\Pdf\Filter\Exception
+     */
     public function testDct()
     {
-        $this->setExpectedException('\Com\Tecnick\Pdf\Filter\Exception');
         $this->obj->decode('DCTDecode', '');
     }
-    
+
+    /**
+     * @expectedException \Com\Tecnick\Pdf\Filter\Exception
+     */
     public function testJpx()
     {
-        $this->setExpectedException('\Com\Tecnick\Pdf\Filter\Exception');
         $this->obj->decode('JPXDecode', '');
     }
-    
+
+    /**
+     * @expectedException \Com\Tecnick\Pdf\Filter\Exception
+     */
     public function testCrypt()
     {
-        $this->setExpectedException('\Com\Tecnick\Pdf\Filter\Exception');
         $this->obj->decode('Crypt', '');
     }
     

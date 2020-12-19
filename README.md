@@ -80,15 +80,15 @@ Create a composer.json in your projects root-directory:
 ```json
 {
     "require": {
-        "tecnickcom/tc-lib-pdf-filter": "dev-master"
-    },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "git@github.com:tecnickcom/tc-lib-pdf-filter.git"
-        }
-    ]
+        "tecnickcom/tc-lib-pdf-filter": "^1.4"
+    }
 }
+```
+
+Or add to an existing project with: 
+
+```bash
+composer require tecnickcom/tc-lib-pdf-filter ^1.4
 ```
 
 

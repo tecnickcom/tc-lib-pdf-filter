@@ -6,7 +6,7 @@
  * @category    Library
  * @package     PdfFilter
  * @author      Nicola Asuni <info@tecnick.com>
- * @copyright   2011-2015 Nicola Asuni - Tecnick.com LTD
+ * @copyright   2011-2023 Nicola Asuni - Tecnick.com LTD
  * @license     http://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE.TXT)
  * @link        https://github.com/tecnickcom/tc-lib-pdf-filter
  *
@@ -27,7 +27,7 @@ use \Com\Tecnick\Pdf\Filter\Exception as PPException;
  * @category    Library
  * @package     PdfFilter
  * @author      Nicola Asuni <info@tecnick.com>
- * @copyright   2011-2015 Nicola Asuni - Tecnick.com LTD
+ * @copyright   2011-2023 Nicola Asuni - Tecnick.com LTD
  * @license     http://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE.TXT)
  * @link        https://github.com/tecnickcom/tc-lib-pdf-filter
  */
@@ -46,15 +46,16 @@ class AsciiEightFive
         $decoded = '';
         // all white-space characters shall be ignored
         $data = preg_replace('/[\s]/', '', $data);
-        // remove start sequence 2-character sequence <~ (3Ch)(7Eh)
-        if (strpos($data, '<~') !== false) {
-            // remove EOD and extra data (if any)
-            $data = substr($data, 2);
+        // check for start 2-character start sequence <~ (3Ch)(7Eh)
+        $sod = strpos($data, '<~');
+        if ($sod !== false) {
+            // remove start 2-character sequence <~ (3Ch)(7Eh) and any preceding character
+            $data = substr($data, ($sod+2));
         }
         // check for EOD: 2-character sequence ~> (7Eh)(3Eh)
         $eod = strpos($data, '~>');
         if ($eod !== false) {
-            // remove EOD and extra data (if any)
+            // remove EOD and following characters (if any)
             $data = substr($data, 0, $eod);
         }
         // data length

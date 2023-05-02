@@ -86,6 +86,8 @@ class FilterTest extends TestUtil
         $code = '<~FCQn=BjrZ5A7dE*Bl%m&EW~>';
         $result = $testObj->decode('ASCII85Decode', $code);
         $this->assertEquals('tc-lib-pdf-filter', $result);
+        $result = $testObj->decode('ASCII85Decode', '<~~>');
+        $this->assertEquals('', $result);
     }
 
     public function testAsciiEightFiveEx()

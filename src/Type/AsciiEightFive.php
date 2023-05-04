@@ -45,13 +45,7 @@ class AsciiEightFive
         // initialize string to return
         $decoded = '';
         // all white-space characters shall be ignored
-        $data = preg_replace('/[\s]/', '', $data);
-        // check for start 2-character start sequence <~ (3Ch)(7Eh)
-        $sod = strpos($data, '<~');
-        if ($sod !== false) {
-            // remove start 2-character sequence <~ (3Ch)(7Eh) and any preceding character
-            $data = substr($data, ($sod+2));
-        }
+        $data = preg_replace('/[\s]+/', '', $data);
         // check for EOD: 2-character sequence ~> (7Eh)(3Eh)
         $eod = strpos($data, '~>');
         if ($eod !== false) {
@@ -61,7 +55,7 @@ class AsciiEightFive
         // data length
         $data_length = strlen($data);
         // check for invalid characters
-        if (preg_match('/[^\x21-\x75,\x74]/', $data) > 0) {
+        if (preg_match('/[^\x21-\x75,\x7A]/', $data) > 0) {
             throw new PPException('invalid code');
         }
         // z sequence

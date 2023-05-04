@@ -83,11 +83,20 @@ class FilterTest extends TestUtil
     public function testAsciiEightFive()
     {
         $testObj = $this->getTestObject();
-        $code = '<~FCQn=BjrZ5A7dE*Bl%m&EW~>';
+        $code = 'FCQn=BjrZ5A7dE*Bl%m&EW~>';
         $result = $testObj->decode('ASCII85Decode', $code);
         $this->assertEquals('tc-lib-pdf-filter', $result);
-        $result = $testObj->decode('ASCII85Decode', '<~~>');
+        $result = $testObj->decode('ASCII85Decode', '~>');
         $this->assertEquals('', $result);
+        $result = $testObj->decode('ASCII85Decode', '<<~>');
+        $this->assertEquals('U', $result);
+        $result = $testObj->decode('ASCII85Decode', 'z~>');
+        $this->assertEquals("\000\000\000\000", $result);
+        $result = $testObj->decode(
+            'ASCII85Decode',
+            '  9Q+r_D\'3P3F*2=BA8c:&EZfF;F<G"/ATTIG@rH7+ARfgnFEMUH@:X(kBldcuDJ()\'Ch[t '
+        );
+        $this->assertEquals('Lorem ipsum dolor sit amet, consectetur adipiscing elit', $result);
     }
 
     public function testAsciiEightFiveEx()
@@ -158,7 +167,7 @@ class FilterTest extends TestUtil
     public function testdecodeAll()
     {
         $testObj = $this->getTestObject();
-        $code = '3C 7E 46 43 51 6E 3D 42 6A 72 5A 35 41 37 64 45 2A 42 6C 25 6D 26 45 57 7E 3E>';
+        $code = '46 43 51 6E 3D 42 6A 72 5A 35 41 37 64 45 2A 42 6C 25 6D 26 45 57 7E 3E>';
         $result = $testObj->decodeAll(array('ASCIIHexDecode', 'ASCII85Decode'), $code);
         $this->assertEquals('tc-lib-pdf-filter', $result);
 

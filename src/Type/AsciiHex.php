@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AsciiHex.php
  *
@@ -15,7 +16,7 @@
 
 namespace Com\Tecnick\Pdf\Filter\Type;
 
-use \Com\Tecnick\Pdf\Filter\Exception as PPException;
+use Com\Tecnick\Pdf\Filter\Exception as PPException;
 
 /**
  * Com\Tecnick\Pdf\Filter\Type\AsciiHex
@@ -59,7 +60,7 @@ class AsciiHex
             // odd number of hexadecimal digits
             if ($eod) {
                 // EOD shall behave as if a 0 (zero) followed the last digit
-                $data = substr($data, 0, -1).'0'.substr($data, -1);
+                $data = substr($data, 0, -1) . '0' . substr($data, -1);
             } else {
                 throw new PPException('invalid code');
             }

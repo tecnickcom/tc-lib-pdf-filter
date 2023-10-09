@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AsciiEightFive.php
  *
@@ -15,7 +16,7 @@
 
 namespace Com\Tecnick\Pdf\Filter\Type;
 
-use \Com\Tecnick\Pdf\Filter\Exception as PPException;
+use Com\Tecnick\Pdf\Filter\Exception as PPException;
 
 /**
  * Com\Tecnick\Pdf\Filter\Type\AsciiEightFive
@@ -59,11 +60,11 @@ class AsciiEightFive
             throw new PPException('invalid code');
         }
         // z sequence
-        $zseq = chr(0).chr(0).chr(0).chr(0);
+        $zseq = chr(0) . chr(0) . chr(0) . chr(0);
         // position inside a group of 4 bytes (0-3)
         $group_pos = 0;
         $tuple = 0;
-        $pow85 = array((85*85*85*85), (85*85*85), (85*85), 85, 1);
+        $pow85 = array((85 * 85 * 85 * 85), (85 * 85 * 85), (85 * 85), 85, 1);
         // for each byte
         for ($i = 0; $i < $data_length; ++$i) {
             // get char value
@@ -78,7 +79,7 @@ class AsciiEightFive
                 // the value represented by a group of 5 characters should never be greater than 2^32 - 1
                 $tuple += (($char - 33) * $pow85[$group_pos]);
                 if ($group_pos == 4) {
-                    $decoded .= chr($tuple >> 24).chr($tuple >> 16).chr($tuple >> 8).chr($tuple);
+                    $decoded .= chr($tuple >> 24) . chr($tuple >> 16) . chr($tuple >> 8) . chr($tuple);
                     $tuple = 0;
                     $group_pos = 0;
                 } else {
@@ -106,9 +107,9 @@ class AsciiEightFive
         // last tuple (if any)
         switch ($group_pos) {
             case 4:
-                return chr($tuple >> 24).chr($tuple >> 16).chr($tuple >> 8);
+                return chr($tuple >> 24) . chr($tuple >> 16) . chr($tuple >> 8);
             case 3:
-                return chr($tuple >> 24).chr($tuple >> 16);
+                return chr($tuple >> 24) . chr($tuple >> 16);
             case 2:
                 return chr($tuple >> 24);
             case 1:

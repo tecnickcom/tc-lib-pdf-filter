@@ -1,4 +1,5 @@
 <?php
+
 /**
  * RunLength.php
  *
@@ -15,7 +16,7 @@
 
 namespace Com\Tecnick\Pdf\Filter\Type;
 
-use \Com\Tecnick\Pdf\Filter\Exception as PPException;
+use Com\Tecnick\Pdf\Filter\Exception as PPException;
 
 /**
  * Com\Tecnick\Pdf\Filter\Type\RunLength

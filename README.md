@@ -2,10 +2,10 @@
 *PHP library to decode PDF compression and encryption filters*
 
 [![Latest Stable Version](https://poser.pugx.org/tecnickcom/tc-lib-pdf-filter/version)](https://packagist.org/packages/tecnickcom/tc-lib-pdf-filter)
-[![Master Build Status](https://secure.travis-ci.org/tecnickcom/tc-lib-pdf-filter.png?branch=main)](https://travis-ci.org/tecnickcom/tc-lib-pdf-filter?branch=main)
-[![Master Coverage Status](https://coveralls.io/repos/tecnickcom/tc-lib-pdf-filter/badge.svg?branch=main&service=github)](https://coveralls.io/github/tecnickcom/tc-lib-pdf-filter?branch=main)
+![Build](https://github.com/tecnickcom/tc-lib-pdf-filter/actions/workflows/check.yml/badge.svg)
+[![Coverage](https://coveralls.io/repos/tecnickcom/tc-lib-pdf-filter/badge.svg?branch=main&service=github)](https://coveralls.io/github/tecnickcom/tc-lib-pdf-filter?branch=main)
 [![License](https://poser.pugx.org/tecnickcom/tc-lib-pdf-filter/license)](https://packagist.org/packages/tecnickcom/tc-lib-pdf-filter)
-[![Total Downloads](https://poser.pugx.org/tecnickcom/tc-lib-pdf-filter/downloads)](https://packagist.org/packages/tecnickcom/tc-lib-pdf-filter)
+[![Downloads](https://poser.pugx.org/tecnickcom/tc-lib-pdf-filter/downloads)](https://packagist.org/packages/tecnickcom/tc-lib-pdf-filter)
 
 [![Donate via PayPal](https://img.shields.io/badge/donate-paypal-87ceeb.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&currency_code=GBP&business=paypal@tecnick.com&item_name=donation%20for%20tc-lib-pdf-filter%20project)
 *Please consider supporting this project by making a donation via [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&currency_code=GBP&business=paypal@tecnick.com&item_name=donation%20for%20tc-lib-pdf-filter%20project)*

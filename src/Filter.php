@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Filter.php
  *
@@ -15,7 +16,7 @@
 
 namespace Com\Tecnick\Pdf\Filter;
 
-use \Com\Tecnick\Pdf\Filter\Exception as PPException;
+use Com\Tecnick\Pdf\Filter\Exception as PPException;
 
 /**
  * Com\Tecnick\Pdf\Filter\Filter
@@ -64,10 +65,10 @@ class Filter
             return $data;
         }
         if (!isset(self::$filtermap[$filter])) {
-            throw new PPException('unknown filter: '.$filter);
+            throw new PPException('unknown filter: ' . $filter);
         }
-        $class = '\\Com\\Tecnick\\Pdf\\Filter\\Type\\'.self::$filtermap[$filter];
-        $obj = new $class;
+        $class = '\\Com\\Tecnick\\Pdf\\Filter\\Type\\' . self::$filtermap[$filter];
+        $obj = new $class();
         return $obj->decode($data);
     }
 

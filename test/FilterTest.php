@@ -1,4 +1,5 @@
 <?php
+
 /**
  * FilterTest.php
  *
@@ -32,7 +33,7 @@ class FilterTest extends TestUtil
 {
     protected function getTestObject()
     {
-        return new \Com\Tecnick\Pdf\Filter\Filter;
+        return new \Com\Tecnick\Pdf\Filter\Filter();
     }
 
     public function testEmptyFilter()
@@ -55,7 +56,7 @@ class FilterTest extends TestUtil
         $code = '74 63 2D 6C 69 62 2D 70 64 66 2D 66 69 6C 74 65 72>';
         $result = $testObj->decode('ASCIIHexDecode', $code);
         $this->assertEquals('tc-lib-pdf-filter', $result);
-        
+
         $code = '74632D6C69622D7064662D66696C746572>';
         $result = $testObj->decode('ASCIIHexDecode', $code);
         $this->assertEquals('tc-lib-pdf-filter', $result);
@@ -79,7 +80,7 @@ class FilterTest extends TestUtil
         $testObj = $this->getTestObject();
         $testObj->decode('ASCIIHexDecode', 'YZ 34 HJ>');
     }
-    
+
     public function testAsciiEightFive()
     {
         $testObj = $this->getTestObject();
@@ -109,7 +110,7 @@ class FilterTest extends TestUtil
     public function testFlate()
     {
         $testObj = $this->getTestObject();
-        $code ="\x78\x9c\x2b\x49\xd6\xcd\xc9\x4c\xd2\x2d\x48\x49\xd3\x4d\xcb\xcc\x29\x49\x2d\x2\x0\x37\x64\x6\x56";
+        $code = "\x78\x9c\x2b\x49\xd6\xcd\xc9\x4c\xd2\x2d\x48\x49\xd3\x4d\xcb\xcc\x29\x49\x2d\x2\x0\x37\x64\x6\x56";
         $result = $testObj->decode('FlateDecode', $code);
         $this->assertEquals('tc-lib-pdf-filter', $result);
     }
@@ -120,11 +121,11 @@ class FilterTest extends TestUtil
         $testObj = $this->getTestObject();
         $testObj->decode('FlateDecode', 'ABC');
     }
-    
+
     public function testRunLength()
     {
         $testObj = $this->getTestObject();
-        $code = chr(247).'A'.chr(18).' tc-lib-pdf-filter '.chr(247).'B'.chr(128);
+        $code = chr(247) . 'A' . chr(18) . ' tc-lib-pdf-filter ' . chr(247) . 'B' . chr(128);
         $result = $testObj->decode('RunLengthDecode', $code);
         $this->assertEquals('AAAAAAAAAA tc-lib-pdf-filter BBBBBBBBBB', $result);
     }
@@ -163,7 +164,7 @@ class FilterTest extends TestUtil
         $testObj = $this->getTestObject();
         $testObj->decode('Crypt', '');
     }
-    
+
     public function testdecodeAll()
     {
         $testObj = $this->getTestObject();
@@ -172,7 +173,7 @@ class FilterTest extends TestUtil
         $this->assertEquals('tc-lib-pdf-filter', $result);
 
         $code = '800D878221D1186E502888C8230241847C2C158F8B26C178AC7E29178CC5642191ACDE311609CD04'
-            .'D1C918784B398F05873150C0703731954A4442E9A86E4222988DE381C46C66283A8907452371F87D01>';
+            . 'D1C918784B398F05873150C0703731954A4442E9A86E4222988DE381C46C66283A8907452371F87D01>';
         $expected = "BT\n/F1 30 Tf 350 750 Td 20 TL\n1 Tr (Hello world) Tj \nET";
         $result = $testObj->decodeAll(array('ASCIIHexDecode', 'LZWDecode', 'ASCII85Decode'), $code);
         $this->assertEquals($expected, $result);

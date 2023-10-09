@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Lzw.php
  *
@@ -15,7 +16,7 @@
 
 namespace Com\Tecnick\Pdf\Filter\Type;
 
-use \Com\Tecnick\Pdf\Filter\Exception as PPException;
+use Com\Tecnick\Pdf\Filter\Exception as PPException;
 
 /**
  * Com\Tecnick\Pdf\Filter\Type\Lzw
@@ -118,12 +119,12 @@ class Lzw
             if ($index < $dix) {
                 // index exist on dictionary
                 $decoded .= $dictionary[$index];
-                $dic_val = $dictionary[$prev_index].$dictionary[$index][0];
+                $dic_val = $dictionary[$prev_index] . $dictionary[$index][0];
                 // store current index
                 $prev_index = $index;
             } else {
                 // index do not exist on dictionary
-                $dic_val = $dictionary[$prev_index].$dictionary[$prev_index][0];
+                $dic_val = $dictionary[$prev_index] . $dictionary[$prev_index][0];
                 $decoded .= $dic_val;
             }
             // update dictionary

@@ -3,7 +3,7 @@
 
 [![Latest Stable Version](https://poser.pugx.org/tecnickcom/tc-lib-pdf-filter/version)](https://packagist.org/packages/tecnickcom/tc-lib-pdf-filter)
 ![Build](https://github.com/tecnickcom/tc-lib-pdf-filter/actions/workflows/check.yml/badge.svg)
-[![Coverage](https://coveralls.io/repos/tecnickcom/tc-lib-pdf-filter/badge.svg?branch=main&service=github)](https://coveralls.io/github/tecnickcom/tc-lib-pdf-filter?branch=main)
+[![Coverage](https://codecov.io/gh/tecnickcom/tc-lib-pdf-filter/graph/badge.svg?token=23KB9T46HA)](https://codecov.io/gh/tecnickcom/tc-lib-pdf-filter)
 [![License](https://poser.pugx.org/tecnickcom/tc-lib-pdf-filter/license)](https://packagist.org/packages/tecnickcom/tc-lib-pdf-filter)
 [![Downloads](https://poser.pugx.org/tecnickcom/tc-lib-pdf-filter/downloads)](https://packagist.org/packages/tecnickcom/tc-lib-pdf-filter)
 

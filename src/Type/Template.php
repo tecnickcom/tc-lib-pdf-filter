@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Dct.php
+ * Template.php
  *
  * @since     2011-05-23
  * @category  Library
@@ -16,12 +16,10 @@
 
 namespace Com\Tecnick\Pdf\Filter\Type;
 
-use Com\Tecnick\Pdf\Filter\Exception as PPException;
-
 /**
- * Com\Tecnick\Pdf\Filter\Type\Dct
+ * Com\Tecnick\Pdf\Filter\Type\Template.php
  *
- * Dct
+ * Template.php
  *
  * @since     2011-05-23
  * @category  Library
@@ -31,21 +29,14 @@ use Com\Tecnick\Pdf\Filter\Exception as PPException;
  * @license   http://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE.TXT)
  * @link      https://github.com/tecnickcom/tc-lib-pdf-filter
  */
-class Dct implements \Com\Tecnick\Pdf\Filter\Type\Template
+interface Template
 {
     /**
-     * Decode the data
+     * Decode the data.
      *
      * @param string $data Data to decode.
      *
      * @return string Decoded data string.
      */
-    public function decode(string $data): string
-    {
-        if ($data === '') {
-            return '';
-        }
-
-        throw new PPException('~ this decoding method has not been yet implemented');
-    }
+    public function decode(string $data): string;
 }

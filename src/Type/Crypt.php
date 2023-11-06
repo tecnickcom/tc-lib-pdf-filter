@@ -3,13 +3,13 @@
 /**
  * Crypt.php
  *
- * @since       2011-05-23
- * @category    Library
- * @package     PdfFilter
- * @author      Nicola Asuni <info@tecnick.com>
- * @copyright   2011-2023 Nicola Asuni - Tecnick.com LTD
- * @license     http://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE.TXT)
- * @link        https://github.com/tecnickcom/tc-lib-pdf-filter
+ * @since     2011-05-23
+ * @category  Library
+ * @package   PdfFilter
+ * @author    Nicola Asuni <info@tecnick.com>
+ * @copyright 2011-2023 Nicola Asuni - Tecnick.com LTD
+ * @license   http://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE.TXT)
+ * @link      https://github.com/tecnickcom/tc-lib-pdf-filter
  *
  * This file is part of tc-lib-pdf-filter software library.
  */
@@ -23,15 +23,15 @@ use Com\Tecnick\Pdf\Filter\Exception as PPException;
  *
  * Crypt
  *
- * @since       2011-05-23
- * @category    Library
- * @package     PdfFilter
- * @author      Nicola Asuni <info@tecnick.com>
- * @copyright   2011-2023 Nicola Asuni - Tecnick.com LTD
- * @license     http://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE.TXT)
- * @link        https://github.com/tecnickcom/tc-lib-pdf-filter
+ * @since     2011-05-23
+ * @category  Library
+ * @package   PdfFilter
+ * @author    Nicola Asuni <info@tecnick.com>
+ * @copyright 2011-2023 Nicola Asuni - Tecnick.com LTD
+ * @license   http://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE.TXT)
+ * @link      https://github.com/tecnickcom/tc-lib-pdf-filter
  */
-class Crypt
+class Crypt implements \Com\Tecnick\Pdf\Filter\Type\Template
 {
     /**
      * Decode the data
@@ -40,9 +40,12 @@ class Crypt
      *
      * @return string Decoded data string.
      */
-    public function decode($data)
+    public function decode(string $data): string
     {
-        $data = null;
+        if ($data === '') {
+            return '';
+        }
+
         throw new PPException('~ this decoding method has not been yet implemented');
     }
 }

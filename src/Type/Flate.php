@@ -3,13 +3,13 @@
 /**
  * Flate.php
  *
- * @since       2011-05-23
- * @category    Library
- * @package     PdfFilter
- * @author      Nicola Asuni <info@tecnick.com>
- * @copyright   2011-2023 Nicola Asuni - Tecnick.com LTD
- * @license     http://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE.TXT)
- * @link        https://github.com/tecnickcom/tc-lib-pdf-filter
+ * @since     2011-05-23
+ * @category  Library
+ * @package   PdfFilter
+ * @author    Nicola Asuni <info@tecnick.com>
+ * @copyright 2011-2023 Nicola Asuni - Tecnick.com LTD
+ * @license   http://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE.TXT)
+ * @link      https://github.com/tecnickcom/tc-lib-pdf-filter
  *
  * This file is part of tc-lib-pdf-filter software library.
  */
@@ -25,15 +25,15 @@ use Com\Tecnick\Pdf\Filter\Exception as PPException;
  * Decompresses data encoded using the zlib/deflate compression method,
  * reproducing the original text or binary data.
  *
- * @since       2011-05-23
- * @category    Library
- * @package     PdfFilter
- * @author      Nicola Asuni <info@tecnick.com>
- * @copyright   2011-2023 Nicola Asuni - Tecnick.com LTD
- * @license     http://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE.TXT)
- * @link        https://github.com/tecnickcom/tc-lib-pdf-filter
+ * @since     2011-05-23
+ * @category  Library
+ * @package   PdfFilter
+ * @author    Nicola Asuni <info@tecnick.com>
+ * @copyright 2011-2023 Nicola Asuni - Tecnick.com LTD
+ * @license   http://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE.TXT)
+ * @link      https://github.com/tecnickcom/tc-lib-pdf-filter
  */
-class Flate
+class Flate implements \Com\Tecnick\Pdf\Filter\Type\Template
 {
     /**
      * Decode the data
@@ -42,13 +42,18 @@ class Flate
      *
      * @return string Decoded data string.
      */
-    public function decode($data)
+    public function decode(string $data): string
     {
+        if ($data === '') {
+            return '';
+        }
+
         // initialize string to return
         $decoded = @gzuncompress($data);
         if ($decoded === false) {
             throw new PPException('invalid code');
         }
+
         return $decoded;
     }
 }

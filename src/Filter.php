@@ -34,22 +34,6 @@ use Com\Tecnick\Pdf\Filter\Exception as PPException;
 class Filter
 {
     /**
-     * Define a list of available filter decoders.
-     */
-    private const FILTERMAP = [
-        'ASCIIHexDecode' => 'AsciiHex',
-        'ASCII85Decode' => 'AsciiEightFive',
-        'LZWDecode' => 'Lzw',
-        'FlateDecode' => 'Flate',
-        'RunLengthDecode' => 'RunLength',
-        'CCITTFaxDecode' => 'CcittFax',
-        'JBIG2Decode' => 'JbigTwo',
-        'DCTDecode' => 'Dct',
-        'JPXDecode' => 'Jpx',
-        'Crypt' => 'Crypt',
-    ];
-
-    /**
      * Decode data using the specified filter type.
      *
      * @param string $filter Filter name.
@@ -63,12 +47,20 @@ class Filter
             return $data;
         }
 
-        if (! array_key_exists($filter, self::FILTERMAP)) {
-            throw new PPException('unknown filter: ' . $filter);
-        }
+        $obj = match ($filter) {
+            'ASCIIHexDecode' => new Type\AsciiHex(),
+            'ASCII85Decode' => new Type\AsciiEightFive(),
+            'LZWDecode' => new Type\Lzw(),
+            'FlateDecode' => new Type\Flate(),
+            'RunLengthDecode' => new Type\RunLength(),
+            'CCITTFaxDecode' => new Type\CcittFax(),
+            'JBIG2Decode' => new Type\JbigTwo(),
+            'DCTDecode' => new Type\Dct(),
+            'JPXDecode' => new Type\Jpx(),
+            'Crypt' => new Type\Crypt(),
+            default => throw new PPException('unknown filter: ' . $filter),
+        };
 
-        $class = '\\Com\\Tecnick\\Pdf\\Filter\\Type\\' . self::FILTERMAP[$filter];
-        $obj = new $class();
         return $obj->decode($data);
     }
 

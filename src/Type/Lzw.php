@@ -70,7 +70,7 @@ class Lzw implements \Com\Tecnick\Pdf\Filter\Type\Template
         $prev_index = 0;
         $decoded = '';
         // while we encounter EOD marker (257), read code_length bits
-        while (($data_length > 0) && (($index = bindec(substr($bitstring, 0, $bitlen))) != 257)) {
+        while (($data_length > 0) && (($index = (int) bindec(substr($bitstring, 0, $bitlen))) != 257)) {
             $this->process($decoded, $bitstring, $bitlen, $data_length, $index, $dictionary, $dix, $prev_index);
         }
 

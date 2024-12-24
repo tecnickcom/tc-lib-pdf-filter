@@ -43,7 +43,7 @@ class AsciiEightFive implements \Com\Tecnick\Pdf\Filter\Type\Template
      *
      * @throws \Com\Tecnick\Pdf\Filter\Exception
      *
-     * @SuppressWarnings(PHPMD.CyclomaticComplexity)
+     * @SuppressWarnings("PHPMD.CyclomaticComplexity")
      */
     public function decode(string $data): string
     {

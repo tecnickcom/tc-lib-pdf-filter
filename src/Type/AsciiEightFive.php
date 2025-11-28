@@ -102,7 +102,7 @@ class AsciiEightFive implements \Com\Tecnick\Pdf\Filter\Type\Template
         }
 
         if ($group_pos > 1) {
-            $tuple += $pow85[($group_pos - 1)];
+            $tuple += $pow85[($group_pos - 1)] ?? 0;
         }
 
         return $decoded . $this->getLastTuple($group_pos, $tuple);

@@ -49,7 +49,7 @@ class Flate implements \Com\Tecnick\Pdf\Filter\Type\Template
         }
 
         // initialize string to return
-        $decoded = @gzuncompress($data);
+        $decoded = @\gzuncompress($data);
         if ($decoded === false) {
             throw new PPException('invalid code');
         }

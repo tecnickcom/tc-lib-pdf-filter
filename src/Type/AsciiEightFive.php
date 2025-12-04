@@ -52,27 +52,27 @@ class AsciiEightFive implements \Com\Tecnick\Pdf\Filter\Type\Template
         }
 
         // all white-space characters shall be ignored
-        $data = preg_replace('/[\s]+/', '', $data);
+        $data = \preg_replace('/[\s]+/', '', $data);
         if ($data === null) {
             throw new PPException('invalid code');
         }
 
         // check for EOD: 2-character sequence ~> (7Eh)(3Eh)
-        $eod = strpos($data, '~>');
+        $eod = \strpos($data, '~>');
         if ($eod !== false) {
             // remove EOD and following characters (if any)
-            $data = substr($data, 0, $eod);
+            $data = \substr($data, 0, $eod);
         }
 
         // data length
-        $data_length = strlen($data);
+        $data_length = \strlen($data);
         // check for invalid characters
-        if (preg_match('/[^\x21-\x75,\x7A]/', $data) > 0) {
+        if (\preg_match('/[^\x21-\x75,\x7A]/', $data) > 0) {
             throw new PPException('invalid code');
         }
 
         // z sequence
-        $zseq = chr(0) . chr(0) . chr(0) . chr(0);
+        $zseq = \chr(0) . \chr(0) . \chr(0) . \chr(0);
         // position inside a group of 4 bytes (0-3)
         $group_pos = 0;
         $tuple = 0;
@@ -81,7 +81,7 @@ class AsciiEightFive implements \Com\Tecnick\Pdf\Filter\Type\Template
         // for each byte
         for ($i = 0; $i < $data_length; ++$i) {
             // get char value
-            $char = ord($data[$i]);
+            $char = \ord($data[$i]);
             if ($char == 122) { // 'z'
                 if ($group_pos == 0) {
                     $decoded .= $zseq;
@@ -92,7 +92,7 @@ class AsciiEightFive implements \Com\Tecnick\Pdf\Filter\Type\Template
                 // the value represented by a group of 5 characters should never be greater than 2^32 - 1
                 $tuple += (($char - 33) * $pow85[$group_pos]);
                 if ($group_pos == 4) {
-                    $decoded .= chr($tuple >> 24) . chr($tuple >> 16) . chr($tuple >> 8) . chr($tuple);
+                    $decoded .= \chr($tuple >> 24) . \chr($tuple >> 16) . \chr($tuple >> 8) . \chr($tuple);
                     $tuple = 0;
                     $group_pos = 0;
                 } else {
@@ -117,9 +117,9 @@ class AsciiEightFive implements \Com\Tecnick\Pdf\Filter\Type\Template
     {
         // last tuple (if any)
         return match ($group_pos) {
-            4 => chr($tuple >> 24) . chr($tuple >> 16) . chr($tuple >> 8),
-            3 => chr($tuple >> 24) . chr($tuple >> 16),
-            2 => chr($tuple >> 24),
+            4 => \chr($tuple >> 24) . \chr($tuple >> 16) . \chr($tuple >> 8),
+            3 => \chr($tuple >> 24) . \chr($tuple >> 16),
+            2 => \chr($tuple >> 24),
             1 => throw new PPException('invalid code'),
             default => '',
         };

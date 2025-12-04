@@ -47,15 +47,15 @@ class Lzw implements \Com\Tecnick\Pdf\Filter\Type\Template
         }
 
         // data length
-        $data_length = strlen($data);
+        $data_length = \strlen($data);
         // convert string to binary string
         $bitstring = '';
         for ($i = 0; $i < $data_length; ++$i) {
-            $bitstring .= sprintf('%08b', ord($data[$i]));
+            $bitstring .= \sprintf('%08b', \ord($data[$i]));
         }
 
         // get the number of bits
-        $data_length = strlen($bitstring);
+        $data_length = \strlen($bitstring);
         // initialize code length in bits
         $bitlen = 9;
         // initialize dictionary index
@@ -63,14 +63,14 @@ class Lzw implements \Com\Tecnick\Pdf\Filter\Type\Template
         // initialize the dictionary (with the first 256 entries).
         $dictionary = [];
         for ($i = 0; $i < 256; ++$i) {
-            $dictionary[$i] = chr($i);
+            $dictionary[$i] = \chr($i);
         }
 
         // previous val
         $prev_index = 0;
         $decoded = '';
         // while we encounter EOD marker (257), read code_length bits
-        while (($data_length > 0) && (($index = (int) bindec(substr($bitstring, 0, $bitlen))) != 257)) {
+        while (($data_length > 0) && (($index = (int) \bindec(\substr($bitstring, 0, $bitlen))) != 257)) {
             $this->process($decoded, $bitstring, $bitlen, $data_length, $index, $dictionary, $dix, $prev_index);
         }
 
@@ -93,7 +93,7 @@ class Lzw implements \Com\Tecnick\Pdf\Filter\Type\Template
         int &$prev_index
     ): void {
         // remove read bits from string
-        $bitstring = substr($bitstring, $bitlen);
+        $bitstring = \substr($bitstring, $bitlen);
         // update number of bits
         $data_length -= $bitlen;
         if ($index == 256) { // clear-table marker
@@ -105,7 +105,7 @@ class Lzw implements \Com\Tecnick\Pdf\Filter\Type\Template
             // reset the dictionary (with the first 256 entries).
             $dictionary = [];
             for ($i = 0; $i < 256; ++$i) {
-                $dictionary[$i] = chr($i);
+                $dictionary[$i] = \chr($i);
             }
         } elseif ($prev_index == 256) {
             // first entry

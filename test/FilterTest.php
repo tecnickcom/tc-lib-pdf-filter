@@ -102,7 +102,7 @@ class FilterTest extends TestUtil
     {
         $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
         $filter = $this->getTestObject();
-        $filter->decode('ASCII85Decode', chr(254));
+        $filter->decode('ASCII85Decode', \chr(254));
     }
 
     public function testFlate(): void
@@ -123,7 +123,7 @@ class FilterTest extends TestUtil
     public function testRunLength(): void
     {
         $filter = $this->getTestObject();
-        $code = chr(247) . 'A' . chr(18) . ' tc-lib-pdf-filter ' . chr(247) . 'B' . chr(128);
+        $code = \chr(247) . 'A' . \chr(18) . ' tc-lib-pdf-filter ' . \chr(247) . 'B' . \chr(128);
         $result = $filter->decode('RunLengthDecode', $code);
         $this->assertEquals('AAAAAAAAAA tc-lib-pdf-filter BBBBBBBBBB', $result);
     }

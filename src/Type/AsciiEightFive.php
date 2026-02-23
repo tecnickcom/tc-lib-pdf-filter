@@ -92,7 +92,7 @@ class AsciiEightFive implements \Com\Tecnick\Pdf\Filter\Type\Template
                 // the value represented by a group of 5 characters should never be greater than 2^32 - 1
                 $tuple += (($char - 33) * $pow85[$group_pos]);
                 if ($group_pos == 4) {
-                    $decoded .= \chr($tuple >> 24) . \chr($tuple >> 16) . \chr($tuple >> 8) . \chr($tuple);
+                    $decoded .= \chr(($tuple >> 24) & 0xFF) . \chr(($tuple >> 16) & 0xFF) . \chr(($tuple >> 8) & 0xFF) . \chr($tuple & 0xFF);
                     $tuple = 0;
                     $group_pos = 0;
                 } else {
@@ -117,9 +117,9 @@ class AsciiEightFive implements \Com\Tecnick\Pdf\Filter\Type\Template
     {
         // last tuple (if any)
         return match ($group_pos) {
-            4 => \chr($tuple >> 24) . \chr($tuple >> 16) . \chr($tuple >> 8),
-            3 => \chr($tuple >> 24) . \chr($tuple >> 16),
-            2 => \chr($tuple >> 24),
+            4 => \chr(($tuple >> 24) & 0xFF) . \chr(($tuple >> 16) & 0xFF) . \chr(($tuple >> 8) & 0xFF),
+            3 => \chr(($tuple >> 24) & 0xFF) . \chr(($tuple >> 16) & 0xFF),
+            2 => \chr(($tuple >> 24) & 0xFF),
             1 => throw new PPException('invalid code'),
             default => '',
         };

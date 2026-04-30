@@ -34,9 +34,10 @@ interface Template
     /**
      * Decode the data.
      *
-     * @param string $data Data to decode.
+     * @param string              $data   Data to decode.
+     * @param array<string, mixed> $params Optional filter parameters (e.g., DecodeParms from PDF).
      *
      * @return string Decoded data string.
      */
-    public function decode(string $data): string;
+    public function decode(string $data, array $params = []): string;
 }

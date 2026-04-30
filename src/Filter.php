@@ -36,12 +36,13 @@ class Filter
     /**
      * Decode data using the specified filter type.
      *
-     * @param string $filter Filter name.
-     * @param string $data   Data to decode.
+     * @param string              $filter Filter name.
+     * @param string              $data   Data to decode.
+     * @param array<string, mixed> $params Optional DecodeParms dictionary for the filter.
      *
      * @return string  Decoded data string.
      */
-    public function decode(string $filter, string $data): string
+    public function decode(string $filter, string $data, array $params = []): string
     {
         if ($filter === '') {
             return $data;
@@ -53,7 +54,7 @@ class Filter
             'LZWDecode' => new Type\Lzw(),
             'FlateDecode' => new Type\Flate(),
             'RunLengthDecode' => new Type\RunLength(),
-            'CCITTFaxDecode' => new Type\CcittFax(),
+            'CCITTFaxDecode' => new Type\CcittFax($params),
             'JBIG2Decode' => new Type\JbigTwo(),
             'DCTDecode' => new Type\Dct(),
             'JPXDecode' => new Type\Jpx(),
@@ -61,21 +62,22 @@ class Filter
             default => throw new PPException('unknown filter: ' . $filter),
         };
 
-        return $obj->decode($data);
+        return $obj->decode($data, $params);
     }
 
     /**
      * Decode the input data using multiple filters
      *
-     * @param array<string>  $filters Array of decoding filters to apply in order
-     * @param string $data    Data to decode.
+     * @param array<string>       $filters Array of decoding filters to apply in order
+     * @param string              $data    Data to decode.
+     * @param array<string, mixed> $params  Optional DecodeParms dictionary.
      *
      * @return string Decoded data
      */
-    public function decodeAll(array $filters, string $data): string
+    public function decodeAll(array $filters, string $data, array $params = []): string
     {
         foreach ($filters as $filter) {
-            $data = $this->decode($filter, $data);
+            $data = $this->decode($filter, $data, $params);
         }
 
         return $data;

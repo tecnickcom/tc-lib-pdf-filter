@@ -16,12 +16,13 @@
 
 namespace Com\Tecnick\Pdf\Filter\Type;
 
-use Com\Tecnick\Pdf\Filter\Exception as PPException;
-
 /**
  * Com\Tecnick\Pdf\Filter\Type\Dct
  *
- * Dct
+ * DCTDecode filter (PDF 32000-2008 §7.4.8).
+ * A DCT stream in a PDF is a self-contained JFIF/JPEG byte sequence.
+ * Returning the data unchanged is spec-correct: JPEG decompression is
+ * the responsibility of the image-rendering layer, not the filter pipeline.
  *
  * @since     2011-05-23
  * @category  Library
@@ -34,18 +35,18 @@ use Com\Tecnick\Pdf\Filter\Exception as PPException;
 class Dct implements \Com\Tecnick\Pdf\Filter\Type\Template
 {
     /**
-     * Decode the data
+     * Decode the data.
      *
-     * @param string $data Data to decode.
+     * DCT streams are self-contained JPEG files; pass through unchanged.
+     * JPEG decompression is left to the image-rendering layer.
+     *
+     * @param string              $data   Data to decode.
+     * @param array<string, mixed> $params Optional filter parameters.
      *
      * @return string Decoded data string.
      */
-    public function decode(string $data): string
+    public function decode(string $data, array $params = []): string
     {
-        if ($data === '') {
-            return '';
-        }
-
-        throw new PPException('~ this decoding method has not been yet implemented');
+        return $data;
     }
 }

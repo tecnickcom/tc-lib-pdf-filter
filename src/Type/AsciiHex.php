@@ -37,13 +37,14 @@ class AsciiHex implements \Com\Tecnick\Pdf\Filter\Type\Template
     /**
      * Decode the data
      *
-     * @param string $data Data to decode.
+     * @param string $data   Data to decode.
+     * @param array<string, mixed> $params Optional filter parameters.
      *
      * @return string Decoded data string.
      *
      * @throws \Com\Tecnick\Pdf\Filter\Exception
      */
-    public function decode(string $data): string
+    public function decode(string $data, array $params = []): string
     {
         if ($data === '') {
             return '';

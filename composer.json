@@ -45,6 +45,9 @@
   "autoload-dev": {
     "psr-4": { "Test\\": "test" }
   },
+  "suggest": {
+    "ext-imagick": "Required for JPXDecode (JPEG 2000) filter support"
+  },
   "support": {
     "issues": "https://github.com/tecnickcom/tc-lib-pdf-filter/issues",
     "source": "https://github.com/tecnickcom/tc-lib-pdf-filter"

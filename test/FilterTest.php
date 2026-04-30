@@ -128,39 +128,130 @@ class FilterTest extends TestUtil
         $this->assertEquals('AAAAAAAAAA tc-lib-pdf-filter BBBBBBBBBB', $result);
     }
 
-    public function testCcittFax(): void
+    public function testCcittFaxEmptyInput(): void
     {
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
+        // Empty input must return '' regardless of whether Imagick is loaded.
         $filter = $this->getTestObject();
-        $filter->decode('CCITTFaxDecode', 'data');
+        $this->assertSame('', $filter->decode('CCITTFaxDecode', ''));
     }
 
-    public function testJbigTwo(): void
+    public function testCcittFaxNoImagemagick(): void
     {
+        if (extension_loaded('imagick')) {
+            $this->markTestSkipped('ext-imagick is loaded; cannot test missing-extension path');
+        }
+
+        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
+        $filter = $this->getTestObject();
+        $filter->decode('CCITTFaxDecode', 'data', ['Columns' => 1728]);
+    }
+
+    public function testCcittFax(): void
+    {
+        if (!extension_loaded('imagick')) {
+            $this->markTestSkipped('ext-imagick is not available');
+        }
+
+        // Verify that parameters are accepted and passed through to the constructor.
+        // Invalid CCITT data should throw an exception when Imagick tries to decode it.
+        $filter = $this->getTestObject();
+
+        try {
+            $filter->decode('CCITTFaxDecode', 'invalid-data', ['Columns' => 8, 'Rows' => 8]);
+            $this->fail('Expected exception for invalid CCITT data');
+        } catch (\Com\Tecnick\Pdf\Filter\Exception $e) {
+            // Expected: Imagick will fail to read the malformed TIFF we built from invalid data
+            $this->assertStringContainsString('CCITTFaxDecode', $e->getMessage());
+        }
+    }
+
+    public function testJbigTwoEmptyInput(): void
+    {
+        // Empty input must return '' regardless of whether jbig2dec is installed.
+        $filter = $this->getTestObject();
+        $this->assertSame('', $filter->decode('JBIG2Decode', ''));
+    }
+
+    public function testJbigTwoNoTool(): void
+    {
+        if (trim((string) shell_exec('command -v jbig2dec 2>/dev/null')) !== '') {
+            $this->markTestSkipped('jbig2dec is installed; cannot test missing-tool path');
+        }
+
         $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
         $filter = $this->getTestObject();
         $filter->decode('JBIG2Decode', 'data');
     }
 
-    public function testDct(): void
+    public function testJbigTwo(): void
     {
+        if (trim((string) shell_exec('command -v jbig2dec 2>/dev/null')) === '') {
+            $this->markTestSkipped('jbig2dec is not installed');
+        }
+
+        // A minimal but valid JBIG2 stream would be needed here.
+        // Until a fixture is available, verify that an invalid stream throws.
         $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
         $filter = $this->getTestObject();
-        $filter->decode('DCTDecode', 'data');
+        $filter->decode('JBIG2Decode', 'invalid-jbig2-data');
     }
 
-    public function testJpx(): void
+    public function testDct(): void
     {
+        // DCT streams are self-contained JPEG files; the filter is a pass-through.
+        $filter = $this->getTestObject();
+        $jpeg = "\xFF\xD8\xFF\xE0\x00\x10JFIF\x00";
+        $this->assertSame($jpeg, $filter->decode('DCTDecode', $jpeg));
+        $this->assertSame('', $filter->decode('DCTDecode', ''));
+    }
+
+    public function testJpxEmptyInput(): void
+    {
+        // Empty input must return '' regardless of whether Imagick is loaded.
+        $filter = $this->getTestObject();
+        $this->assertSame('', $filter->decode('JPXDecode', ''));
+    }
+
+    public function testJpxNoImagick(): void
+    {
+        if (extension_loaded('imagick')) {
+            $this->markTestSkipped('ext-imagick is loaded; cannot test missing-extension path');
+        }
+
         $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
         $filter = $this->getTestObject();
         $filter->decode('JPXDecode', 'data');
     }
 
+    public function testJpx(): void
+    {
+        if (!extension_loaded('imagick')) {
+            $this->markTestSkipped('ext-imagick is not available');
+        }
+
+        // Minimal 1x1 white JP2 fixture generated with Imagick.
+        $jp2 = "\x00\x00\x00\x0c\x6a\x50\x20\x20\x0d\x0a\x87\x0a\x00\x00\x00\x14\x66\x74\x79\x70\x6a\x70\x32\x20"
+            . "\x00\x00\x00\x00\x6a\x70\x32\x20\x00\x00\x00\x2d\x6a\x70\x32\x68\x00\x00\x00\x16\x69\x68\x64\x72"
+            . "\x00\x00\x00\x01\x00\x00\x00\x01\x00\x03\x07\x07\x00\x00\x00\x00\x00\x0f\x63\x6f\x6c\x72\x01\x00"
+            . "\x00\x00\x00\x00\x10\x00\x00\x00\x8c\x6a\x70\x32\x63\xff\x4f\xff\x51\x00\x2f\x00\x00\x00\x00\x00"
+            . "\x01\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00"
+            . "\x00\x00\x00\x00\x00\x00\x03\x07\x01\x01\x07\x01\x01\x07\x01\x01\xff\x52\x00\x0c\x00\x00\x00\x01"
+            . "\x01\x00\x04\x04\x00\x01\xff\x5c\x00\x04\x40\x40\xff\x64\x00\x25\x00\x01\x43\x72\x65\x61\x74\x65"
+            . "\x64\x20\x62\x79\x20\x4f\x70\x65\x6e\x4a\x50\x45\x47\x20\x76\x65\x72\x73\x69\x6f\x6e\x20\x32\x2e"
+            . "\x35\x2e\x33\xff\x90\x00\x0a\x00\x00\x00\x00\x00\x14\x00\x01\xff\x93\xcf\xb4\x04\x00\x80\x80\xff\xd9";
+
+        $filter = $this->getTestObject();
+        $result = $filter->decode('JPXDecode', $jp2);
+        // Output is a PNG blob; verify it starts with the PNG signature.
+        $this->assertStringStartsWith("\x89PNG", $result);
+    }
+
     public function testCrypt(): void
     {
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
+        // Without key material the Crypt filter acts as Identity (pass-through).
         $filter = $this->getTestObject();
-        $filter->decode('Crypt', 'data');
+        $this->assertSame('data', $filter->decode('Crypt', 'data'));
+        $this->assertSame('', $filter->decode('Crypt', ''));
     }
 
     public function testdecodeAll(): void

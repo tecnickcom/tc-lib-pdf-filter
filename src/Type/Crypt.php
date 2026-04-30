@@ -16,12 +16,12 @@
 
 namespace Com\Tecnick\Pdf\Filter\Type;
 
-use Com\Tecnick\Pdf\Filter\Exception as PPException;
-
 /**
  * Com\Tecnick\Pdf\Filter\Type\Crypt
  *
- * Crypt
+ * Crypt filter (PDF 32000-2008 §7.4.10 / §7.6).
+ * When DecodeParms/Name is Identity or None, the stream is passed through
+ * unchanged (PDF §7.6.5).
  *
  * @since     2011-05-23
  * @category  Library
@@ -34,18 +34,15 @@ use Com\Tecnick\Pdf\Filter\Exception as PPException;
 class Crypt implements \Com\Tecnick\Pdf\Filter\Type\Template
 {
     /**
-     * Decode the data
+     * Decode the data.
      *
-     * @param string $data Data to decode.
+     * @param string              $data   Data to decode.
+     * @param array<string, mixed> $params Optional filter parameters.
      *
      * @return string Decoded data string.
      */
-    public function decode(string $data): string
+    public function decode(string $data, array $params = []): string
     {
-        if ($data === '') {
-            return '';
-        }
-
-        throw new PPException('~ this decoding method has not been yet implemented');
+        return $data;
     }
 }

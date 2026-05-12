@@ -46,7 +46,7 @@ It is intended for both generation and parsing workflows where PDF streams must 
 
 ## Requirements
 
-- PHP 8.1 or later
+- PHP 8.2 or later
 - Extensions: `zlib`, `pcre`
 - Composer
 

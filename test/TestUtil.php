@@ -31,11 +31,12 @@ use PHPUnit\Framework\TestCase;
  */
 class TestUtil extends TestCase
 {
-    /**
-     * @param class-string<\Throwable> $exception
-     */
-    public function bcExpectException($exception): void
+    public function bcExpectException(string $exception): void
     {
+        if (!\is_a($exception, \Throwable::class, true)) {
+            throw new \InvalidArgumentException('Expected a Throwable class-string');
+        }
+
         parent::expectException($exception);
     }
 }

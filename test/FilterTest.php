@@ -93,7 +93,7 @@ class FilterTest extends TestUtil
         $this->assertEquals("\000\000\000\000", $result);
         $result = $filter->decode(
             'ASCII85Decode',
-            '  9Q+r_D\'3P3F*2=BA8c:&EZfF;F<G"/ATTIG@rH7+ARfgnFEMUH@:X(kBldcuDJ()\'Ch[t '
+            '  9Q+r_D\'3P3F*2=BA8c:&EZfF;F<G"/ATTIG@rH7+ARfgnFEMUH@:X(kBldcuDJ()\'Ch[t ',
         );
         $this->assertEquals('Lorem ipsum dolor sit amet, consectetur adipiscing elit', $result);
     }
@@ -230,7 +230,8 @@ class FilterTest extends TestUtil
         }
 
         // Minimal 1x1 white JP2 fixture generated with Imagick.
-        $jp2 = "\x00\x00\x00\x0c\x6a\x50\x20\x20\x0d\x0a\x87\x0a\x00\x00\x00\x14\x66\x74\x79\x70\x6a\x70\x32\x20"
+        $jp2 =
+            "\x00\x00\x00\x0c\x6a\x50\x20\x20\x0d\x0a\x87\x0a\x00\x00\x00\x14\x66\x74\x79\x70\x6a\x70\x32\x20"
             . "\x00\x00\x00\x00\x6a\x70\x32\x20\x00\x00\x00\x2d\x6a\x70\x32\x68\x00\x00\x00\x16\x69\x68\x64\x72"
             . "\x00\x00\x00\x01\x00\x00\x00\x01\x00\x03\x07\x07\x00\x00\x00\x00\x00\x0f\x63\x6f\x6c\x72\x01\x00"
             . "\x00\x00\x00\x00\x10\x00\x00\x00\x8c\x6a\x70\x32\x63\xff\x4f\xff\x51\x00\x2f\x00\x00\x00\x00\x00"
@@ -261,7 +262,8 @@ class FilterTest extends TestUtil
         $result = $filter->decodeAll(['ASCIIHexDecode', 'ASCII85Decode'], $code);
         $this->assertEquals('tc-lib-pdf-filter', $result);
 
-        $code = '800D878221D1186E502888C8230241847C2C158F8B26C178AC7E29178CC5642191ACDE311609CD04'
+        $code =
+            '800D878221D1186E502888C8230241847C2C158F8B26C178AC7E29178CC5642191ACDE311609CD04'
             . 'D1C918784B398F05873150C0703731954A4442E9A86E4222988DE381C46C66283A8907452371F87D01>';
         $expected = "BT\n/F1 30 Tf 350 750 Td 20 TL\n1 Tr (Hello world) Tj \nET";
         $result = $filter->decodeAll(['ASCIIHexDecode', 'LZWDecode', 'ASCII85Decode'], $code);

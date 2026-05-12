@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * JbigTwo.php
  *
@@ -58,9 +60,7 @@ class JbigTwo implements \Com\Tecnick\Pdf\Filter\Type\Template
 
         $binary = (string) shell_exec('command -v jbig2dec 2>/dev/null');
         if (trim($binary) === '') {
-            throw new PPException(
-                'JBIG2Decode requires the jbig2dec CLI tool to be installed and on PATH'
-            );
+            throw new PPException('JBIG2Decode requires the jbig2dec CLI tool to be installed and on PATH');
         }
 
         $inFile = tempnam(sys_get_temp_dir(), 'jbig2in_');
@@ -74,11 +74,24 @@ class JbigTwo implements \Com\Tecnick\Pdf\Filter\Type\Template
             file_put_contents($inFile, $data);
             $result = $this->runJbig2dec($inFile, $outFile);
         } finally {
-            @unlink($inFile);
-            @unlink($outFile);
+            $this->cleanupTempFile($inFile);
+            $this->cleanupTempFile($outFile);
         }
 
         return $result;
+    }
+
+    /**
+     * Remove a temporary file while suppressing runtime warnings without using `@`.
+     */
+    private function cleanupTempFile(string $path): void
+    {
+        \set_error_handler(static fn(): bool => true);
+        try {
+            unlink($path);
+        } finally {
+            \restore_error_handler();
+        }
     }
 
     /**
@@ -93,11 +106,7 @@ class JbigTwo implements \Com\Tecnick\Pdf\Filter\Type\Template
      */
     private function runJbig2dec(string $inFile, string $outFile): string
     {
-        $cmd = sprintf(
-            'jbig2dec -e -o %s %s 2>/dev/null',
-            escapeshellarg($outFile),
-            escapeshellarg($inFile)
-        );
+        $cmd = sprintf('jbig2dec -e -o %s %s 2>/dev/null', escapeshellarg($outFile), escapeshellarg($inFile));
 
         $pipes = [];
         $proc = proc_open($cmd, [], $pipes);

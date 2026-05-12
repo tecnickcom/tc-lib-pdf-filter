@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * CcittFax.php
  *
@@ -79,27 +81,25 @@ class CcittFax implements \Com\Tecnick\Pdf\Filter\Type\Template
      */
     public function __construct(array $params = [])
     {
-        $defaults = [
-            'K' => 0,
-            'Columns' => 1728,
-            'Rows' => 0,
-            'BlackIs1' => false,
-        ];
-        $config = array_replace($defaults, array_intersect_key($params, $defaults));
-
-        /** @var int $kValue */
-        $kValue = $config['K'];
-        $kParam = (int) $kValue;
+        $kParam = (int) ($params['K'] ?? 0);
         $this->group = $kParam < 0 ? 3 : 4;
-        /** @var int $colValue */
-        $colValue = $config['Columns'];
-        $this->columns = (int) $colValue;
-        /** @var int $rowValue */
-        $rowValue = $config['Rows'];
-        $this->rows = (int) $rowValue;
-        /** @var bool $blackValue */
-        $blackValue = $config['BlackIs1'];
-        $this->blackIs1 = (bool) $blackValue;
+        $this->columns = max(1, (int) ($params['Columns'] ?? 1728));
+        $this->rows = max(0, (int) ($params['Rows'] ?? 0));
+        if (!\array_key_exists('BlackIs1', $params)) {
+            $this->blackIs1 = false;
+            return;
+        }
+
+        $this->blackIs1 = match (true) {
+            \is_bool($params['BlackIs1']) => $params['BlackIs1'],
+            \is_int($params['BlackIs1']), \is_float($params['BlackIs1']) => $params['BlackIs1'] !== 0,
+            \is_string($params['BlackIs1']) => \in_array(
+                \strtolower($params['BlackIs1']),
+                ['1', 'true', 'yes', 'on'],
+                true,
+            ),
+            default => false,
+        };
     }
 
     /**
@@ -148,7 +148,7 @@ class CcittFax implements \Com\Tecnick\Pdf\Filter\Type\Template
     private function buildTiffHeader(string $ccittData): string
     {
         // TIFF little-endian header
-        $tiff = "II" . pack('V', 8); // Byte order + offset to first IFD
+        $tiff = 'II' . pack('V', 8); // Byte order + offset to first IFD
 
         // Collect tags
         $tags = [];
@@ -157,14 +157,14 @@ class CcittFax implements \Com\Tecnick\Pdf\Filter\Type\Template
         $tags[] = pack('VVVV', 256, 3, 1, $this->columns);
 
         // Tag 257 (ImageLength / height)
-        $height = $this->rows > 0 ? $this->rows : ceil(strlen($ccittData) * 8 / $this->columns);
+        $height = $this->rows > 0 ? $this->rows : ceil((strlen($ccittData) * 8) / $this->columns);
         $tags[] = pack('VVVV', 257, 3, 1, $height);
 
         // Tag 258 (BitsPerSample) = 1
         $tags[] = pack('VVVV', 258, 3, 1, 1);
 
         // Tag 259 (Compression): 4 = Group 4, 3 = Group 3
-        $compression = ($this->group === 3) ? 3 : 4;
+        $compression = $this->group === 3 ? 3 : 4;
         $tags[] = pack('VVVV', 259, 3, 1, $compression);
 
         // Tag 262 (PhotometricInterpretation): 0 = white, 1 = black
@@ -172,7 +172,7 @@ class CcittFax implements \Com\Tecnick\Pdf\Filter\Type\Template
         $tags[] = pack('VVVV', 262, 3, 1, $photometric);
 
         // Tag 273 (StripOffsets): points to image data
-        $stripOffset = 8 + (2 + count($tags) * 12 + 4);
+        $stripOffset = 8 + (2 + (count($tags) * 12) + 4);
         $tags[] = pack('VVVV', 273, 4, 1, $stripOffset);
 
         // Tag 279 (StripByteCounts)

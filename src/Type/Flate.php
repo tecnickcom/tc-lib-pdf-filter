@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Flate.php
  *
@@ -42,6 +44,8 @@ class Flate implements \Com\Tecnick\Pdf\Filter\Type\Template
      * @param array<string, mixed> $params Optional filter parameters.
      *
      * @return string Decoded data string.
+     *
+     * @throws \Com\Tecnick\Pdf\Filter\Exception
      */
     public function decode(string $data, array $params = []): string
     {
@@ -49,8 +53,16 @@ class Flate implements \Com\Tecnick\Pdf\Filter\Type\Template
             return '';
         }
 
-        // initialize string to return
-        $decoded = @\gzuncompress($data);
+        $handler = static fn(): bool => true;
+
+        \set_error_handler($handler);
+        try {
+            // initialize string to return
+            $decoded = \gzuncompress($data);
+        } finally {
+            \restore_error_handler();
+        }
+
         if ($decoded === false) {
             throw new PPException('invalid code');
         }

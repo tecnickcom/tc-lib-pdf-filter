@@ -57,7 +57,7 @@ class TypeRuntimeBranchTest extends TestUtil
     private function extractTiffStrip(string $tiffBlob): string
     {
         $byteOrder = substr($tiffBlob, 0, 2);
-        $littleEndian = ($byteOrder === 'II');
+        $littleEndian = $byteOrder === 'II';
         if (!$littleEndian && $byteOrder !== 'MM') {
             return '';
         }
@@ -79,11 +79,11 @@ class TypeRuntimeBranchTest extends TestUtil
             $value = $this->readUInt32($tiffBlob, $cursor + 8, $littleEndian);
 
             if ($count === 1 && $tag === 273) {
-                $stripOffset = ($type === 3) ? ($value & 0xFFFF) : $value;
+                $stripOffset = $type === 3 ? $value & 0xFFFF : $value;
             }
 
             if ($count === 1 && $tag === 279) {
-                $stripByteCount = ($type === 3) ? ($value & 0xFFFF) : $value;
+                $stripByteCount = $type === 3 ? $value & 0xFFFF : $value;
             }
 
             $cursor += 12;
@@ -93,7 +93,7 @@ class TypeRuntimeBranchTest extends TestUtil
             return '';
         }
 
-        return (string) substr($tiffBlob, $stripOffset, $stripByteCount);
+        return substr($tiffBlob, $stripOffset, $stripByteCount);
     }
 
     protected function setUp(): void
@@ -137,7 +137,7 @@ class TypeRuntimeBranchTest extends TestUtil
         }
 
         $img = new \Imagick();
-        $img->newImage(1, 1, new \ImagickPixel('white'));
+        $img->newImage(1, 1, 'white');
         $img->setImageType(\Imagick::IMGTYPE_BILEVEL);
         $img->setImageDepth(1);
         $img->setImageCompression(\Imagick::COMPRESSION_GROUP4);
@@ -250,7 +250,7 @@ class TypeRuntimeBranchTest extends TestUtil
         $this->assertSame('decoded-ok', $result);
         $this->assertSame(
             ['/tmp/jbig2in_mock', '/tmp/jbig2out_mock'],
-            \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$unlinked
+            \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$unlinked,
         );
     }
 }

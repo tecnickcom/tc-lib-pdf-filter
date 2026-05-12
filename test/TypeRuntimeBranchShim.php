@@ -69,6 +69,10 @@ final class RuntimeShim
 
 function extension_loaded(string $name): bool
 {
+    if ($name === '') {
+        return false;
+    }
+
     if (RuntimeShim::$enabled && $name === 'imagick' && RuntimeShim::$imagickLoaded !== null) {
         return RuntimeShim::$imagickLoaded;
     }
@@ -79,7 +83,7 @@ function extension_loaded(string $name): bool
 /**
  * @return string|false|null
  */
-function shell_exec(?string $command)
+function shell_exec(?string $command): string|false|null
 {
     if (RuntimeShim::$enabled && RuntimeShim::$shellExecOutput !== null) {
         return RuntimeShim::$shellExecOutput;
@@ -99,7 +103,10 @@ function tempnam(string $directory, string $prefix)
         }
 
         if (RuntimeShim::$tempnamSequence !== []) {
-            return array_shift(RuntimeShim::$tempnamSequence);
+            $next = RuntimeShim::$tempnamSequence[0];
+            unset(RuntimeShim::$tempnamSequence[0]);
+            RuntimeShim::$tempnamSequence = array_values(RuntimeShim::$tempnamSequence);
+            return $next;
         }
     }
 
@@ -107,21 +114,25 @@ function tempnam(string $directory, string $prefix)
 }
 
 /**
- * @param array<int, list<string>|resource> $descriptorSpec
- * @param mixed                              $pipes
- * @param array<string, mixed>|null          $envVars
- * @param array<string, bool>|null           $options
+ * @param array{
+ *   0?: array{0: 'file', 1: non-empty-string, 2?: 'r'|'w'}|array{0: 'pipe', 1: 'r'|'w'}|object|resource,
+ *   1?: array{0: 'file', 1: non-empty-string, 2?: 'r'|'w'}|array{0: 'pipe', 1: 'r'|'w'}|object|resource,
+ *   2?: array{0: 'file', 1: non-empty-string, 2?: 'r'|'w'}|array{0: 'pipe', 1: 'r'|'w'}|object|resource
+ * }                                                                                     $descriptorSpec
+ * @param array<array-key, mixed>|null                                                   $pipes
+ * @param array<string, string>|null                                                    $envVars
+ * @param array{blocking_pipes?: bool, bypass_shell?: bool, create_new_console?: bool, create_process_group?: bool, suppress_errors?: bool}|null $options
  *
  * @return resource|false
  */
 function proc_open(
     string $command,
     array $descriptorSpec,
-    &$pipes,
+    ?array &$pipes,
     ?string $cwd = null,
     ?array $envVars = null,
-    ?array $options = null
-) {
+    ?array $options = null,
+): mixed {
     if (RuntimeShim::$enabled) {
         if (RuntimeShim::$procOpenFail) {
             return false;
@@ -131,13 +142,17 @@ function proc_open(
         return \fopen('php://temp', 'r');
     }
 
+    if ($cwd === '') {
+        $cwd = null;
+    }
+
     return \proc_open($command, $descriptorSpec, $pipes, $cwd, $envVars, $options);
 }
 
 /**
- * @param resource $process
+ * @param resource|mixed $process
  */
-function proc_close($process): int
+function proc_close(mixed $process): int
 {
     if (RuntimeShim::$enabled) {
         if (is_resource($process)) {
@@ -145,6 +160,10 @@ function proc_close($process): int
         }
 
         return RuntimeShim::$procCloseCode;
+    }
+
+    if (!is_resource($process)) {
+        return 1;
     }
 
     return \proc_close($process);
@@ -167,10 +186,10 @@ function file_exists(string $filename): bool
 function file_get_contents(
     string $filename,
     bool $useIncludePath = false,
-    $context = null,
+    mixed $context = null,
     int $offset = 0,
-    ?int $length = null
-) {
+    ?int $length = null,
+): string|false {
     if (RuntimeShim::$enabled) {
         return RuntimeShim::$fileGetContents;
     }
@@ -186,17 +205,19 @@ function file_get_contents(
 
 /**
  * @param mixed         $data
- * @param resource|null $context
+ * @param resource|mixed $context
  *
  * @return int|false
  */
-function file_put_contents(string $filename, $data, int $flags = 0, $context = null)
+function file_put_contents(string $filename, mixed $data, int $flags = 0, mixed $context = null): int|false
 {
     if (RuntimeShim::$enabled) {
         return RuntimeShim::$putResult;
     }
 
-    return \file_put_contents($filename, $data, $flags, $context);
+    $safeContext = is_resource($context) ? $context : null;
+
+    return \file_put_contents($filename, $data, $flags, $safeContext);
 }
 
 function unlink(string $filename): bool

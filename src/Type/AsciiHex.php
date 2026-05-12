@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * AsciiHex.php
  *
@@ -66,23 +68,23 @@ class AsciiHex implements \Com\Tecnick\Pdf\Filter\Type\Template
 
         // get data length
         $data_length = \strlen($data);
-        if ($data_length % 2 != 0) {
-            // odd number of hexadecimal digits
-            if ($eod) {
-                // EOD shall behave as if a 0 (zero) followed the last digit
-                $data = \substr($data, 0, -1) . '0' . \substr($data, -1);
-            } else {
+        if (($data_length % 2) !== 0) {
+            if (!$eod) {
                 throw new PPException('invalid code');
             }
+
+            // odd number of hexadecimal digits
+            // EOD shall behave as if a 0 (zero) followed the last digit
+            $data = \substr($data, 0, -1) . '0' . \substr($data, -1);
         }
 
         // check for invalid characters
-        if (\preg_match('/[^a-fA-F\d]/', $data) > 0) {
+        $invalid = \preg_match('/[^a-fA-F\d]/', $data);
+        if ($invalid === false || $invalid > 0) {
             throw new PPException('invalid code');
         }
 
         // get one byte of binary data for each pair of ASCII hexadecimal digits
-        $decoded = \pack('H*', $data);
-        return $decoded;
+        return \pack('H*', $data);
     }
 }

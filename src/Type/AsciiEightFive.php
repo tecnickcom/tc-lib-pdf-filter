@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * AsciiEightFive.php
  *
@@ -52,6 +54,19 @@ class AsciiEightFive implements \Com\Tecnick\Pdf\Filter\Type\Template
             return '';
         }
 
+        $data = $this->normalizeInput($data);
+
+        [$decoded, $group_pos, $tuple] = $this->decodeTuples($data);
+        $tuple = $this->applyPadding($group_pos, $tuple);
+
+        return $decoded . $this->getLastTuple($group_pos, $tuple);
+    }
+
+    /**
+     * @throws \Com\Tecnick\Pdf\Filter\Exception
+     */
+    private function normalizeInput(string $data): string
+    {
         // all white-space characters shall be ignored
         $data = \preg_replace('/[\s]+/', '', $data);
         if ($data === null) {
@@ -65,51 +80,85 @@ class AsciiEightFive implements \Com\Tecnick\Pdf\Filter\Type\Template
             $data = \substr($data, 0, $eod);
         }
 
-        // data length
-        $data_length = \strlen($data);
         // check for invalid characters
-        if (\preg_match('/[^\x21-\x75,\x7A]/', $data) > 0) {
+        $invalid = \preg_match('/[^\x21-\x75,\x7A]/', $data);
+        if ($invalid === false || $invalid > 0) {
             throw new PPException('invalid code');
         }
 
-        // z sequence
+        return $data;
+    }
+
+    /**
+     * @return array{string, int, int}
+     *
+     * @throws \Com\Tecnick\Pdf\Filter\Exception
+     */
+    private function decodeTuples(string $data): array
+    {
         $zseq = \chr(0) . \chr(0) . \chr(0) . \chr(0);
-        // position inside a group of 4 bytes (0-3)
         $group_pos = 0;
         $tuple = 0;
-        $pow85 = [(85 * 85 * 85 * 85), (85 * 85 * 85), (85 * 85), 85, 1];
         $decoded = '';
-        // for each byte
+        $data_length = \strlen($data);
         for ($i = 0; $i < $data_length; ++$i) {
-            // get char value
             $char = \ord($data[$i]);
-            if ($char == 122) { // 'z'
-                if ($group_pos == 0) {
-                    $decoded .= $zseq;
-                } else {
+            if ($char === 122) {
+                if ($group_pos !== 0) {
                     throw new PPException('invalid code');
                 }
-            } else {
-                // the value represented by a group of 5 characters should never be greater than 2^32 - 1
-                $tuple += (($char - 33) * $pow85[$group_pos]);
-                if ($group_pos == 4) {
-                    $decoded .= \chr(($tuple >> 24) & 0xFF)
-                        . \chr(($tuple >> 16) & 0xFF)
-                        . \chr(($tuple >> 8) & 0xFF)
-                        . \chr($tuple & 0xFF);
-                    $tuple = 0;
-                    $group_pos = 0;
-                } else {
-                    ++$group_pos;
-                }
+
+                $decoded .= $zseq;
+                continue;
             }
+
+            $tuple += ($char - 33) * $this->getPow85($group_pos);
+            if ($group_pos === 4) {
+                $decoded .=
+                    \chr(($tuple >> 24) & 0xFF)
+                    . \chr(($tuple >> 16) & 0xFF)
+                    . \chr(($tuple >> 8) & 0xFF)
+                    . \chr($tuple & 0xFF);
+                $tuple = 0;
+                $group_pos = 0;
+                continue;
+            }
+
+            $group_pos = match ($group_pos) {
+                0 => 1,
+                1 => 2,
+                2 => 3,
+                default => 4,
+            };
         }
 
-        if ($group_pos > 1) {
-            $tuple += $pow85[($group_pos - 1)] ?? 0;
-        }
+        return [$decoded, $group_pos, $tuple];
+    }
 
-        return $decoded . $this->getLastTuple($group_pos, $tuple);
+    /**
+     * @throws \Com\Tecnick\Pdf\Filter\Exception
+     */
+    private function getPow85(int $group_pos): int
+    {
+        return match ($group_pos) {
+            0 => 85 * 85 * 85 * 85,
+            1 => 85 * 85 * 85,
+            2 => 85 * 85,
+            3 => 85,
+            4 => 1,
+            default => throw new PPException('invalid code'),
+        };
+    }
+
+    private function applyPadding(int $group_pos, int $tuple): int
+    {
+        return $tuple
+        + match ($group_pos) {
+            2 => 85 * 85 * 85,
+            3 => 85 * 85,
+            4 => 85,
+            default => 0,
+        };
     }
 
     /**

@@ -29,8 +29,57 @@ class LzwProxy extends \Com\Tecnick\Pdf\Filter\Type\Lzw
         int &$index,
         array &$dictionary,
         int &$dix,
-        int &$prev_index
+        int &$prev_index,
     ): void {
-        $this->process($decoded, $bitstring, $bitlen, $data_length, $index, $dictionary, $dix, $prev_index);
+        // remove read bits from string
+        $bitstring = \substr($bitstring, $bitlen);
+        // update number of bits
+        $data_length -= $bitlen;
+        if ($index === 256) {
+            $bitlen = 9;
+            $dix = 258;
+            $prev_index = 256;
+            $dictionary = [];
+            for ($i = 0; $i < 256; ++$i) {
+                $dictionary[$i] = \chr($i);
+            }
+
+            return;
+        }
+
+        if ($prev_index === 256) {
+            $decoded .= $dictionary[$index] ?? '';
+            $prev_index = $index;
+
+            return;
+        }
+
+        if ($index < $dix) {
+            $current = $dictionary[$index] ?? '';
+            $previous = $dictionary[$prev_index] ?? '';
+            $decoded .= $current;
+            $dic_val = $previous . ($current[0] ?? '');
+            $prev_index = $index;
+        } else {
+            $previous = $dictionary[$prev_index] ?? '';
+            $dic_val = $previous . ($previous[0] ?? '');
+            $decoded .= $dic_val;
+        }
+
+        $dictionary[$dix] = $dic_val;
+        ++$dix;
+        if ($dix === 2047) {
+            $bitlen = 12;
+            return;
+        }
+
+        if ($dix === 1023) {
+            $bitlen = 11;
+            return;
+        }
+
+        if ($dix === 511) {
+            $bitlen = 10;
+        }
     }
 }

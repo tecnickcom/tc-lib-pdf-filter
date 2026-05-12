@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Filter.php
  *
@@ -41,6 +43,8 @@ class Filter
      * @param array<string, mixed> $params Optional DecodeParms dictionary for the filter.
      *
      * @return string  Decoded data string.
+     *
+     * @throws \Com\Tecnick\Pdf\Filter\Exception
      */
     public function decode(string $filter, string $data, array $params = []): string
     {
@@ -73,6 +77,8 @@ class Filter
      * @param array<string, mixed> $params  Optional DecodeParms dictionary.
      *
      * @return string Decoded data
+     *
+     * @throws \Com\Tecnick\Pdf\Filter\Exception
      */
     public function decodeAll(array $filters, string $data, array $params = []): string
     {

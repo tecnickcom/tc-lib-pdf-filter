@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Lzw.php
  *
@@ -62,81 +64,91 @@ class Lzw implements \Com\Tecnick\Pdf\Filter\Type\Template
         // initialize dictionary index
         $dix = 258;
         // initialize the dictionary (with the first 256 entries).
+        $dictionary = $this->getInitialDictionary();
+
+        // previous val
+        $prev_index = 0;
+        $decoded = '';
+        /** @var array{bitlen: int, dix: int, prev_index: int, dictionary: array<int, string>, decoded: string} $state */
+        $state = [
+            'bitlen' => $bitlen,
+            'dix' => $dix,
+            'prev_index' => $prev_index,
+            'dictionary' => $dictionary,
+            'decoded' => $decoded,
+        ];
+
+        // while we encounter EOD marker (257), read code_length bits
+        while ($data_length > 0 && ($index = (int) \bindec(\substr($bitstring, 0, $state['bitlen']))) !== 257) {
+            // remove read bits from string
+            $bitstring = \substr($bitstring, $state['bitlen']);
+            // update number of bits
+            $data_length -= $state['bitlen'];
+            $state = $this->processIndex($index, $state);
+        }
+
+        return $state['decoded'];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getInitialDictionary(): array
+    {
         $dictionary = [];
         for ($i = 0; $i < 256; ++$i) {
             $dictionary[$i] = \chr($i);
         }
 
-        // previous val
-        $prev_index = 0;
-        $decoded = '';
-        // while we encounter EOD marker (257), read code_length bits
-        while (($data_length > 0) && (($index = (int) \bindec(\substr($bitstring, 0, $bitlen))) != 257)) {
-            $this->process($decoded, $bitstring, $bitlen, $data_length, $index, $dictionary, $dix, $prev_index);
-        }
-
-        return $decoded;
+        return $dictionary;
     }
 
     /**
-     * Internal processing
+     * @param array{bitlen: int, dix: int, prev_index: int, dictionary: array<int, string>, decoded: string} $state
      *
-     * @param array<int, string> $dictionary
+     * @return array{bitlen: int, dix: int, prev_index: int, dictionary: array<int, string>, decoded: string}
      */
-    protected function process(
-        string &$decoded,
-        string &$bitstring,
-        int &$bitlen,
-        int &$data_length,
-        int &$index,
-        array &$dictionary,
-        int &$dix,
-        int &$prev_index
-    ): void {
-        // remove read bits from string
-        $bitstring = \substr($bitstring, $bitlen);
-        // update number of bits
-        $data_length -= $bitlen;
-        if ($index == 256) { // clear-table marker
-            // reset code length in bits
-            $bitlen = 9;
-            // reset dictionary index
-            $dix = 258;
-            $prev_index = 256;
-            // reset the dictionary (with the first 256 entries).
-            $dictionary = [];
-            for ($i = 0; $i < 256; ++$i) {
-                $dictionary[$i] = \chr($i);
-            }
-        } elseif ($prev_index == 256) {
-            // first entry
-            $decoded .= $dictionary[$index];
-            $prev_index = $index;
-        } else {
-            // check if index exist in the dictionary
-            if ($index < $dix) {
-                // index exist on dictionary
-                $decoded .= $dictionary[$index];
-                $dic_val = $dictionary[$prev_index] . $dictionary[$index][0];
-                // store current index
-                $prev_index = $index;
-            } else {
-                // index do not exist on dictionary
-                $dic_val = $dictionary[$prev_index] . $dictionary[$prev_index][0];
-                $decoded .= $dic_val;
-            }
-
-            // update dictionary
-            $dictionary[$dix] = $dic_val;
-            ++$dix;
-            // change bit length by case
-            if ($dix == 2047) {
-                $bitlen = 12;
-            } elseif ($dix == 1023) {
-                $bitlen = 11;
-            } elseif ($dix == 511) {
-                $bitlen = 10;
-            }
+    private function processIndex(int $index, array $state): array
+    {
+        if ($index === 256) {
+            $state['bitlen'] = 9;
+            $state['dix'] = 258;
+            $state['prev_index'] = 256;
+            $state['dictionary'] = $this->getInitialDictionary();
+            return $state;
         }
+
+        if ($state['prev_index'] === 256) {
+            $state['decoded'] .= $state['dictionary'][$index] ?? '';
+            $state['prev_index'] = $index;
+            return $state;
+        }
+
+        $dic_val = '';
+
+        if ($index < $state['dix']) {
+            $current = $state['dictionary'][$index] ?? '';
+            $previous = $state['dictionary'][$state['prev_index']] ?? '';
+            $state['decoded'] .= $current;
+            $dic_val = $previous . ($current[0] ?? '');
+            $state['prev_index'] = $index;
+        }
+
+        if ($index >= $state['dix']) {
+            $previous = $state['dictionary'][$state['prev_index']] ?? '';
+            $dic_val = $previous . ($previous[0] ?? '');
+            $state['decoded'] .= $dic_val;
+        }
+
+        $state['dictionary'][$state['dix']] = $dic_val;
+        ++$state['dix'];
+        $state['bitlen'] = match ($state['dix']) {
+            2047 => 12,
+            1023 => 11,
+            511 => 10,
+            default => $state['bitlen'],
+        };
+
+        return $state;
     }
 }

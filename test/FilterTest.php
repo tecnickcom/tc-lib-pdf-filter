@@ -113,6 +113,34 @@ class FilterTest extends TestUtil
         $this->assertEquals('tc-lib-pdf-filter', $result);
     }
 
+    public function testFlateRawDeflateFallback(): void
+    {
+        $filter = $this->getTestObject();
+        $expected = 'tc-lib-pdf-filter';
+        $code = (string) \gzdeflate($expected);
+        $result = $filter->decode('FlateDecode', $code);
+        $this->assertSame($expected, $result);
+    }
+
+    public function testFlateHeaderStrippedFallback(): void
+    {
+        $filter = $this->getTestObject();
+        $expected = 'tc-lib-pdf-filter';
+        $raw = (string) \gzdeflate($expected);
+        $code = "\x78\x9c" . $raw;
+        $result = $filter->decode('FlateDecode', $code);
+        $this->assertSame($expected, $result);
+    }
+
+    public function testFlateGzipFallback(): void
+    {
+        $filter = $this->getTestObject();
+        $expected = 'tc-lib-pdf-filter';
+        $code = (string) \gzencode($expected);
+        $result = $filter->decode('FlateDecode', $code);
+        $this->assertSame($expected, $result);
+    }
+
     public function testFlateEx(): void
     {
         $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);

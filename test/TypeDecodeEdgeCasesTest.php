@@ -148,6 +148,35 @@ class TypeDecodeEdgeCasesTest extends TestUtil
         $obj->decode('!~>');
     }
 
+    public function testFlateDecodeRawDeflatePayload(): void
+    {
+        $obj = new \Com\Tecnick\Pdf\Filter\Type\Flate();
+        $expected = 'raw-deflate-fallback';
+        $rawDeflate = (string) \gzdeflate($expected);
+
+        $this->assertSame($expected, $obj->decode($rawDeflate));
+    }
+
+    public function testFlateDecodeHeaderStrippedFallback(): void
+    {
+        $obj = new \Com\Tecnick\Pdf\Filter\Type\Flate();
+        $expected = 'header-stripped-fallback';
+        $rawDeflate = (string) \gzdeflate($expected);
+        // Build malformed zlib-like data: header + raw payload without Adler-32 trailer.
+        $payload = "\x78\x9c" . $rawDeflate;
+
+        $this->assertSame($expected, $obj->decode($payload));
+    }
+
+    public function testFlateDecodeGzipWrappedPayload(): void
+    {
+        $obj = new \Com\Tecnick\Pdf\Filter\Type\Flate();
+        $expected = 'gzip-fallback';
+        $gzipPayload = (string) \gzencode($expected);
+
+        $this->assertSame($expected, $obj->decode($gzipPayload));
+    }
+
     public function testLzwProcessIndexOutsideDictionary(): void
     {
         $obj = new LzwProxy();

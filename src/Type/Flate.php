@@ -57,8 +57,22 @@ class Flate implements \Com\Tecnick\Pdf\Filter\Type\Template
 
         \set_error_handler($handler);
         try {
-            // initialize string to return
             $decoded = \gzuncompress($data);
+
+            if ($decoded === false) {
+                // Some producer streams are raw deflate payloads.
+                $decoded = \gzinflate($data);
+            }
+
+            if ($decoded === false && \strlen($data) > 2) {
+                // Some malformed streams include a zlib header with invalid checksum.
+                $decoded = \gzinflate(\substr($data, 2));
+            }
+
+            if ($decoded === false) {
+                // Final compatibility attempt for gzip-wrapped payloads.
+                $decoded = \gzdecode($data);
+            }
         } finally {
             \restore_error_handler();
         }

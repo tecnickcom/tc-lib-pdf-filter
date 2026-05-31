@@ -61,18 +61,21 @@ class TypeDecodeEdgeCasesTest extends TestUtil
 
     private function getCcittTagValue(string $tiff, int $tagId): int
     {
-        // The implementation writes: "II" + 4-byte IFD offset, so IFD starts at byte 6.
-        $header = \unpack('vcount', \substr($tiff, 6, 2));
+        // TIFF header: 2-byte order + 2-byte version + 4-byte IFD offset.
+        $ifdHeader = \unpack('Voffset', \substr($tiff, 4, 4));
+        $ifdOffset = (int) ($ifdHeader['offset'] ?? 0);
+
+        $header = \unpack('vcount', \substr($tiff, $ifdOffset, 2));
         $count = (int) ($header['count'] ?? 0);
-        $cursor = 8;
+        $cursor = $ifdOffset + 2;
 
         for ($i = 0; $i < $count; ++$i) {
-            $entry = \unpack('Vtag/Vtype/Vitems/Vvalue', \substr($tiff, $cursor, 16));
+            $entry = \unpack('vtag/vtype/Vitems/Vvalue', \substr($tiff, $cursor, 12));
             if ((int) ($entry['tag'] ?? 0) === $tagId) {
                 return (int) ($entry['value'] ?? 0);
             }
 
-            $cursor += 16;
+            $cursor += 12;
         }
 
         return 0;
@@ -312,5 +315,27 @@ class TypeDecodeEdgeCasesTest extends TestUtil
         $boolFalse = new \Com\Tecnick\Pdf\Filter\Type\CcittFax(['BlackIs1' => false]);
         $tiffBool = $this->buildCcittHeader($boolFalse, $ccittData);
         $this->assertSame(0, $this->getCcittTagValue($tiffBool, 262));
+    }
+
+    public function testCcittFaxDecodeWrapsImagickException(): void
+    {
+        if (!\extension_loaded('imagick')) {
+            $this->markTestSkipped('ext-imagick is not available');
+        }
+
+        $obj = new class extends \Com\Tecnick\Pdf\Filter\Type\CcittFax {
+            protected function newImagick(): \Imagick
+            {
+                throw new \ImagickException('forced imagick failure');
+            }
+        };
+
+        try {
+            $obj->decode("\xAA");
+            $this->fail('Expected wrapped exception when Imagick throws');
+        } catch (\Com\Tecnick\Pdf\Filter\Exception $e) {
+            $this->assertStringContainsString('CCITTFaxDecode: Imagick failed to decode the stream:', $e->getMessage());
+            $this->assertStringContainsString('forced imagick failure', $e->getMessage());
+        }
     }
 }

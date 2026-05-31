@@ -181,14 +181,15 @@ class FilterTest extends TestUtil
         }
 
         // Verify that parameters are accepted and passed through to the constructor.
-        // Invalid CCITT data should throw an exception when Imagick tries to decode it.
+        // Depending on the ImageMagick build, malformed CCITT payloads may either
+        // fail with an exception or decode into a PNG with best-effort recovery.
         $filter = $this->getTestObject();
 
         try {
-            $filter->decode('CCITTFaxDecode', 'invalid-data', ['Columns' => 8, 'Rows' => 8]);
-            $this->fail('Expected exception for invalid CCITT data');
+            $result = $filter->decode('CCITTFaxDecode', 'invalid-data', ['Columns' => 8, 'Rows' => 8]);
+            $this->assertStringStartsWith("\x89PNG", $result);
         } catch (\Com\Tecnick\Pdf\Filter\Exception $e) {
-            // Expected: Imagick will fail to read the malformed TIFF we built from invalid data
+            // Expected on stricter ImageMagick builds.
             $this->assertStringContainsString('CCITTFaxDecode', $e->getMessage());
         }
     }

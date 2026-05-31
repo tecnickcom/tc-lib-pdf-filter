@@ -47,6 +47,9 @@ use Com\Tecnick\Pdf\Filter\Exception as PPException;
  * @copyright 2011-2026 Nicola Asuni - Tecnick.com LTD
  * @license   https://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE.TXT)
  * @link      https://github.com/tecnickcom/tc-lib-pdf-filter
+ *
+ * @phpstan-type TiffTag array{tag: int, type: int, count: int, value: int}
+ * @phpstan-type TiffTagList array<int, TiffTag>
  */
 class CcittFax implements \Com\Tecnick\Pdf\Filter\Type\Template
 {
@@ -108,7 +111,7 @@ class CcittFax implements \Com\Tecnick\Pdf\Filter\Type\Template
      * Builds a TIFF container around the CCITT bitstream and uses Imagick
      * to decode it.
      *
-     * @param string              $data   Raw CCITT-compressed image data.
+     * @param string               $data   Raw CCITT-compressed image data.
      * @param array<string, mixed> $params Optional filter parameters (unused; params set via constructor).
      *
      * @return string Decoded PNG image bytes.
@@ -128,7 +131,7 @@ class CcittFax implements \Com\Tecnick\Pdf\Filter\Type\Template
         try {
             $tiff = $this->buildTiffHeader($data);
 
-            $imagick = new \Imagick();
+            $imagick = $this->newImagick();
             $imagick->readImageBlob($tiff);
             $imagick->setImageFormat('png');
 
@@ -148,41 +151,13 @@ class CcittFax implements \Com\Tecnick\Pdf\Filter\Type\Template
     private function buildTiffHeader(string $ccittData): string
     {
         // TIFF little-endian header
-        $tiff = 'II' . pack('V', 8); // Byte order + offset to first IFD
+        $ifdOffset = 8;
+        $tiff = 'II' . pack('v', 42) . pack('V', $ifdOffset); // Byte order + version + offset to first IFD
 
-        // Collect tags
-        $tags = [];
-
-        // Tag 256 (ImageWidth)
-        $tags[] = pack('VVVV', 256, 3, 1, $this->columns);
-
-        // Tag 257 (ImageLength / height)
-        $height = $this->rows > 0 ? $this->rows : ceil((strlen($ccittData) * 8) / $this->columns);
-        $tags[] = pack('VVVV', 257, 3, 1, $height);
-
-        // Tag 258 (BitsPerSample) = 1
-        $tags[] = pack('VVVV', 258, 3, 1, 1);
-
-        // Tag 259 (Compression): 4 = Group 4, 3 = Group 3
-        $compression = $this->group === 3 ? 3 : 4;
-        $tags[] = pack('VVVV', 259, 3, 1, $compression);
-
-        // Tag 262 (PhotometricInterpretation): 0 = white, 1 = black
-        $photometric = $this->blackIs1 ? 1 : 0;
-        $tags[] = pack('VVVV', 262, 3, 1, $photometric);
-
-        // Tag 273 (StripOffsets): points to image data
-        $stripOffset = 8 + (2 + (count($tags) * 12) + 4);
-        $tags[] = pack('VVVV', 273, 4, 1, $stripOffset);
-
-        // Tag 279 (StripByteCounts)
-        $tags[] = pack('VVVV', 279, 4, 1, strlen($ccittData));
-
-        // Tag 282 (XResolution)
-        $tags[] = pack('VVVV', 282, 5, 1, $stripOffset + strlen($ccittData));
-
-        // Tag 283 (YResolution)
-        $tags[] = pack('VVVV', 283, 5, 1, $stripOffset + strlen($ccittData) + 8);
+        $ccittLength = strlen($ccittData);
+        $tagDefs = $this->buildTiffTagDefinitions($ccittLength);
+        $tagDefs = $this->populateTiffOffsets($tagDefs, $ifdOffset, $ccittLength);
+        $tags = $this->packTiffTags($tagDefs);
 
         // Write IFD
         $tiff .= pack('v', count($tags)); // Number of tags
@@ -197,5 +172,91 @@ class CcittFax implements \Com\Tecnick\Pdf\Filter\Type\Template
         $tiff .= pack('VV', 72, 1); // YResolution: 72/1
 
         return $tiff;
+    }
+
+    /**
+     * Build static TIFF tag definitions.
+     *
+     * @param int $ccittLength Raw CCITT payload length.
+     *
+     * @return TiffTagList
+     */
+    private function buildTiffTagDefinitions(int $ccittLength): array
+    {
+        $height = $this->rows > 0 ? $this->rows : (int) ceil(($ccittLength * 8) / $this->columns);
+        $compression = $this->group === 3 ? 3 : 4;
+        $photometric = $this->blackIs1 ? 1 : 0;
+
+        return [
+            ['tag' => 256, 'type' => 3, 'count' => 1, 'value' => $this->columns], // ImageWidth
+            ['tag' => 257, 'type' => 3, 'count' => 1, 'value' => $height], // ImageLength / height
+            ['tag' => 258, 'type' => 3, 'count' => 1, 'value' => 1], // BitsPerSample = 1
+            ['tag' => 259, 'type' => 3, 'count' => 1, 'value' => $compression], // Compression: 4 = Group 4, 3 = Group 3
+            ['tag' => 262, 'type' => 3, 'count' => 1, 'value' => $photometric], // PhotometricInterpretation : 0 = white, 1 = black
+            ['tag' => 273, 'type' => 4, 'count' => 1, 'value' => 0], // StripOffsets : points to image data
+            ['tag' => 279, 'type' => 4, 'count' => 1, 'value' => $ccittLength], // StripByteCounts
+            ['tag' => 282, 'type' => 5, 'count' => 1, 'value' => 0], // XResolution
+            ['tag' => 283, 'type' => 5, 'count' => 1, 'value' => 0], // YResolution
+        ];
+    }
+
+    /**
+     * Populate offset-based values after final IFD size is known.
+     *
+     * @param TiffTagList $tagDefs
+     * @param int         $ifdOffset Byte offset of the IFD.
+     * @param int         $ccittLength Raw CCITT payload length.
+     *
+     * @return TiffTagList
+     */
+    private function populateTiffOffsets(array $tagDefs, int $ifdOffset, int $ccittLength): array
+    {
+        $ifdSize = 2 + (count($tagDefs) * 12) + 4;
+        $stripOffset = $ifdOffset + $ifdSize;
+        $xResolutionOffset = $stripOffset + $ccittLength;
+        $yResolutionOffset = $xResolutionOffset + 8;
+
+        foreach ($tagDefs as $index => $tagDef) {
+            if ($tagDef['tag'] === 273) {
+                $tagDefs[$index]['value'] = $stripOffset;
+                continue;
+            }
+
+            if ($tagDef['tag'] === 282) {
+                $tagDefs[$index]['value'] = $xResolutionOffset;
+                continue;
+            }
+
+            if ($tagDef['tag'] === 283) {
+                $tagDefs[$index]['value'] = $yResolutionOffset;
+            }
+        }
+
+        return $tagDefs;
+    }
+
+    /**
+     * Convert TIFF tag definitions to binary IFD entries.
+     *
+     * @param TiffTagList $tagDefs
+     *
+     * @return array<int, string>
+     */
+    private function packTiffTags(array $tagDefs): array
+    {
+        $tags = [];
+        foreach ($tagDefs as $tagDef) {
+            $tags[] = pack('vvVV', $tagDef['tag'], $tagDef['type'], $tagDef['count'], $tagDef['value']);
+        }
+
+        return $tags;
+    }
+
+    /**
+     * Instantiate Imagick (overridable in tests).
+     */
+    protected function newImagick(): \Imagick
+    {
+        return new \Imagick();
     }
 }

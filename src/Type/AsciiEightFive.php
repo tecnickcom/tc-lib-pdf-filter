@@ -80,8 +80,8 @@ class AsciiEightFive implements \Com\Tecnick\Pdf\Filter\Type\Template
             $data = \substr($data, 0, $eod);
         }
 
-        // check for invalid characters
-        $invalid = \preg_match('/[^\x21-\x75,\x7A]/', $data);
+        // check for invalid characters: valid bytes are '!'..'u' (0x21-0x75) and 'z' (0x7A)
+        $invalid = \preg_match('/[^\x21-\x75\x7A]/', $data);
         if ($invalid === false || $invalid > 0) {
             throw new PPException('invalid code');
         }

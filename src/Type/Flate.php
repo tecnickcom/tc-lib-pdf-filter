@@ -23,7 +23,7 @@ use Com\Tecnick\Pdf\Filter\Exception as PPException;
 /**
  * Com\Tecnick\Pdf\Filter\Type\Flate
  *
- * Flatee
+ * FlateDecode
  * Decompresses data encoded using the zlib/deflate compression method,
  * reproducing the original text or binary data.
  *

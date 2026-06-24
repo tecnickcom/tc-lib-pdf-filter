@@ -253,4 +253,41 @@ class TypeRuntimeBranchTest extends TestUtil
             \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$unlinked,
         );
     }
+
+    public function testJbigTwoInputWriteFailure(): void
+    {
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$enabled = true;
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$shellExecOutput = '/usr/bin/jbig2dec';
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$tempnamSequence = ['/tmp/jbig2in_mock', '/tmp/jbig2out_mock'];
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$putResult = false;
+
+        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
+
+        $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
+        $obj->decode('payload');
+    }
+
+    public function testJbigTwoGlobalsSuccessPathViaShim(): void
+    {
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$enabled = true;
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$shellExecOutput = '/usr/bin/jbig2dec';
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$tempnamSequence = [
+            '/tmp/jbig2in_mock',
+            '/tmp/jbig2out_mock',
+            '/tmp/jbig2glob_mock',
+        ];
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$procCloseCode = 0;
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$fileExists = true;
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$fileGetContents = 'decoded-ok';
+
+        $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
+        $result = $obj->decode('payload', ['JBIG2Globals' => 'shared-segments']);
+
+        $this->assertSame('decoded-ok', $result);
+        // The globals temp file is created and cleaned up alongside the in/out files.
+        $this->assertSame(
+            ['/tmp/jbig2in_mock', '/tmp/jbig2out_mock', '/tmp/jbig2glob_mock'],
+            \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$unlinked,
+        );
+    }
 }

@@ -285,11 +285,13 @@ class TypeDecodeEdgeCasesTest extends TestUtil
             'Rows' => 0,
         ]);
 
+        // K = -1 => Group 4 (T.6) => TIFF compression 4, no T4Options.
         $tiffTrue = $this->buildCcittHeader($asTrue, $ccittData);
-        $this->assertSame(3, $this->getCcittTagValue($tiffTrue, 259));
+        $this->assertSame(4, $this->getCcittTagValue($tiffTrue, 259));
         $this->assertSame(1, $this->getCcittTagValue($tiffTrue, 262));
         $this->assertSame(10, $this->getCcittTagValue($tiffTrue, 256));
         $this->assertSame(2, $this->getCcittTagValue($tiffTrue, 257));
+        $this->assertSame(0, $this->getCcittTagValue($tiffTrue, 292));
 
         $asFalse = new \Com\Tecnick\Pdf\Filter\Type\CcittFax([
             'BlackIs1' => ['unexpected'],
@@ -297,11 +299,24 @@ class TypeDecodeEdgeCasesTest extends TestUtil
             'Rows' => -5,
         ]);
 
+        // K = 0 (default) => Group 3 1-D => TIFF compression 3, T4Options = 0.
         $tiffFalse = $this->buildCcittHeader($asFalse, $ccittData);
-        $this->assertSame(4, $this->getCcittTagValue($tiffFalse, 259));
+        $this->assertSame(3, $this->getCcittTagValue($tiffFalse, 259));
         $this->assertSame(0, $this->getCcittTagValue($tiffFalse, 262));
         $this->assertSame(1, $this->getCcittTagValue($tiffFalse, 256));
         $this->assertSame(16, $this->getCcittTagValue($tiffFalse, 257));
+        $this->assertSame(0, $this->getCcittTagValue($tiffFalse, 292));
+    }
+
+    public function testCcittFaxGroup3TwoDimensionalSetsT4Options(): void
+    {
+        $ccittData = "\xAA\xBB";
+
+        // K > 0 => Group 3 2-D => TIFF compression 3 with T4Options bit 0 set.
+        $mixed = new \Com\Tecnick\Pdf\Filter\Type\CcittFax(['K' => 4, 'Columns' => 8]);
+        $tiff = $this->buildCcittHeader($mixed, $ccittData);
+        $this->assertSame(3, $this->getCcittTagValue($tiff, 259));
+        $this->assertSame(1, $this->getCcittTagValue($tiff, 292));
     }
 
     public function testCcittFaxConstructorAcceptsNumericAndBooleanBlackIs1(): void
@@ -337,5 +352,50 @@ class TypeDecodeEdgeCasesTest extends TestUtil
             $this->assertStringContainsString('CCITTFaxDecode: Imagick failed to decode the stream:', $e->getMessage());
             $this->assertStringContainsString('forced imagick failure', $e->getMessage());
         }
+    }
+
+    public function testJpxDecodeWrapsImagickException(): void
+    {
+        if (!\extension_loaded('imagick')) {
+            $this->markTestSkipped('ext-imagick is not available');
+        }
+
+        $obj = new class extends \Com\Tecnick\Pdf\Filter\Type\Jpx {
+            protected function newImagick(): \Imagick
+            {
+                throw new \ImagickException('forced imagick failure');
+            }
+        };
+
+        try {
+            $obj->decode("\xAA");
+            $this->fail('Expected wrapped exception when Imagick throws');
+        } catch (\Com\Tecnick\Pdf\Filter\Exception $e) {
+            $this->assertStringContainsString('JPXDecode: Imagick failed to decode the stream:', $e->getMessage());
+            $this->assertStringContainsString('forced imagick failure', $e->getMessage());
+        }
+    }
+
+    public function testRunLengthTruncatedRunDoesNotWarn(): void
+    {
+        $obj = new \Com\Tecnick\Pdf\Filter\Type\RunLength();
+
+        // "\x02XYZ" copies 3 literal bytes; the trailing "\xC8" (200) is a run-length
+        // marker with no following byte to repeat. The decoder must stop cleanly
+        // instead of reading past the end of the string.
+        $errors = [];
+        \set_error_handler(static function (int $_errno, string $errstr) use (&$errors): bool {
+            $errors[] = $errstr;
+            return true;
+        });
+
+        try {
+            $result = $obj->decode("\x02XYZ\xC8");
+        } finally {
+            \restore_error_handler();
+        }
+
+        $this->assertSame('XYZ', $result);
+        $this->assertSame([], $errors);
     }
 }

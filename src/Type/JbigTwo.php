@@ -47,6 +47,7 @@ class JbigTwo implements \Com\Tecnick\Pdf\Filter\Type\Template
      *
      * @param string              $data   Data to decode.
      * @param array<string, mixed> $params Optional filter parameters.
+     *   - 'JBIG2Globals' (string): shared JBIG2 segments referenced by the page stream.
      *
      * @return string Decoded data string.
      *
@@ -70,15 +71,51 @@ class JbigTwo implements \Com\Tecnick\Pdf\Filter\Type\Template
             throw new PPException('JBIG2Decode: failed to create temporary files');
         }
 
+        $globalsFile = null;
         try {
-            file_put_contents($inFile, $data);
-            $result = $this->runJbig2dec($inFile, $outFile);
+            if (file_put_contents($inFile, $data) === false) {
+                throw new PPException('JBIG2Decode: failed to write temporary input file');
+            }
+
+            $globalsFile = $this->writeGlobals($params['JBIG2Globals'] ?? null);
+            $result = $this->runJbig2dec($inFile, $outFile, $globalsFile);
         } finally {
             $this->cleanupTempFile($inFile);
             $this->cleanupTempFile($outFile);
+            if ($globalsFile !== null) {
+                $this->cleanupTempFile($globalsFile);
+            }
         }
 
         return $result;
+    }
+
+    /**
+     * Write the optional JBIG2Globals stream to a temporary file.
+     *
+     * @param mixed $globals Shared JBIG2 segments (a string), or null/other when there are none.
+     *
+     * @return string|null Path to the globals file, or null when there are no globals.
+     *
+     * @throws PPException if the temporary globals file cannot be created or written.
+     */
+    private function writeGlobals(mixed $globals): ?string
+    {
+        if (!\is_string($globals) || $globals === '') {
+            return null;
+        }
+
+        $globalsFile = tempnam(sys_get_temp_dir(), 'jbig2glob_');
+        if ($globalsFile === false) {
+            throw new PPException('JBIG2Decode: failed to create temporary files');
+        }
+
+        if (file_put_contents($globalsFile, $globals) === false) {
+            $this->cleanupTempFile($globalsFile);
+            throw new PPException('JBIG2Decode: failed to write temporary globals file');
+        }
+
+        return $globalsFile;
     }
 
     /**
@@ -97,16 +134,24 @@ class JbigTwo implements \Com\Tecnick\Pdf\Filter\Type\Template
     /**
      * Run jbig2dec to decode the input file into the output file.
      *
-     * @param string $inFile  Path to the input JBIG2 data file.
-     * @param string $outFile Path to the output file.
+     * @param string      $inFile      Path to the input JBIG2 data file.
+     * @param string      $outFile     Path to the output file.
+     * @param string|null $globalsFile Path to the optional shared-globals file.
      *
      * @return string Decoded data.
      *
      * @throws PPException if jbig2dec fails to launch, exits non-zero, or output cannot be read.
      */
-    private function runJbig2dec(string $inFile, string $outFile): string
+    private function runJbig2dec(string $inFile, string $outFile, ?string $globalsFile = null): string
     {
-        $cmd = sprintf('jbig2dec -e -o %s %s 2>/dev/null', escapeshellarg($outFile), escapeshellarg($inFile));
+        // The globals stream (if any) must precede the page stream on the command line.
+        $globalsArg = $globalsFile !== null ? escapeshellarg($globalsFile) . ' ' : '';
+        $cmd = sprintf(
+            'jbig2dec -e -o %s %s%s 2>/dev/null',
+            escapeshellarg($outFile),
+            $globalsArg,
+            escapeshellarg($inFile),
+        );
 
         $pipes = [];
         $proc = proc_open($cmd, [], $pipes);

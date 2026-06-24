@@ -49,7 +49,7 @@ class Jpx implements \Com\Tecnick\Pdf\Filter\Type\Template
      *
      * @return string Decoded data string.
      *
-     * @throws PPException if the Imagick extension is not loaded.
+     * @throws PPException if the Imagick extension is not loaded or decoding fails.
      */
     public function decode(string $data, array $params = []): string
     {
@@ -61,10 +61,22 @@ class Jpx implements \Com\Tecnick\Pdf\Filter\Type\Template
             throw new PPException('JPXDecode requires the Imagick PHP extension (ext-imagick)');
         }
 
-        $imagick = new \Imagick();
-        $imagick->readImageBlob($data);
-        $imagick->setImageFormat('png');
+        try {
+            $imagick = $this->newImagick();
+            $imagick->readImageBlob($data);
+            $imagick->setImageFormat('png');
 
-        return $imagick->getImageBlob();
+            return $imagick->getImageBlob();
+        } catch (\ImagickException $e) {
+            throw new PPException('JPXDecode: Imagick failed to decode the stream: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Instantiate Imagick (overridable in tests).
+     */
+    protected function newImagick(): \Imagick
+    {
+        return new \Imagick();
     }
 }

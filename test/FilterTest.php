@@ -59,9 +59,11 @@ class FilterTest extends TestUtil
         $result = $filter->decode('ASCIIHexDecode', $code);
         $this->assertEquals('tc-lib-pdf-filter', $result);
 
+        // Odd number of hex digits before EOD: a trailing 0 is appended to the
+        // last digit (PDF 32000-1:2008 §7.4.2), so "9" becomes byte 0x90.
         $code = '30 31 32 33 34 35 36 37 38 39 9>';
         $result = $filter->decode('ASCIIHexDecode', $code);
-        $this->assertEquals("0123456789\t", $result);
+        $this->assertEquals('0123456789' . \chr(0x90), $result);
     }
 
     public function testAsciiHexEx(): void

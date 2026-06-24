@@ -21,8 +21,8 @@ namespace Com\Tecnick\Pdf\Filter\Type;
 /**
  * Com\Tecnick\Pdf\Filter\Type\RunLength
  *
- * RunLengthe
- * Decompresses data encoded using the zlib/deflate compression method,
+ * RunLengthDecode
+ * Decompresses data encoded using a byte-oriented run-length encoding algorithm,
  * reproducing the original text or binary data.
  *
  * @since     2011-05-23
@@ -73,6 +73,11 @@ class RunLength implements \Com\Tecnick\Pdf\Filter\Type\Template
 
             // if length is in the range 129 to 255,
             // the following single byte shall be copied 257 - length (2 to 128) times during decompression
+            if (($idx + 1) >= $data_length) {
+                // truncated run: no byte follows the length marker
+                break;
+            }
+
             $decoded .= \str_repeat($data[$idx + 1], 257 - $byte);
             // move to next block
             $idx += 2;

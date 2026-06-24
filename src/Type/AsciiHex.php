@@ -74,8 +74,8 @@ class AsciiHex implements \Com\Tecnick\Pdf\Filter\Type\Template
             }
 
             // odd number of hexadecimal digits
-            // EOD shall behave as if a 0 (zero) followed the last digit
-            $data = \substr($data, 0, -1) . '0' . \substr($data, -1);
+            // EOD shall behave as if a 0 (zero) followed the last digit (PDF 32000-1:2008 §7.4.2)
+            $data .= '0';
         }
 
         // check for invalid characters

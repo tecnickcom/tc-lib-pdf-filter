@@ -36,10 +36,16 @@ namespace Com\Tecnick\Pdf\Filter\Type;
 class Lzw implements \Com\Tecnick\Pdf\Filter\Type\Template
 {
     /**
+     * @var int Code-length increase offset: 1 = early change (PDF default), 0 = standard LZW.
+     */
+    private int $earlyChange = 1;
+
+    /**
      * Decode the data
      *
      * @param string $data   Data to decode.
      * @param array<string, mixed> $params Optional filter parameters.
+     *   - 'EarlyChange' (int): 1 (default) increases the code length one code early; 0 disables it.
      *
      * @return string Decoded data string.
      */
@@ -48,6 +54,8 @@ class Lzw implements \Com\Tecnick\Pdf\Filter\Type\Template
         if ($data === '') {
             return '';
         }
+
+        $this->earlyChange = (int) ($params['EarlyChange'] ?? 1) === 0 ? 0 : 1;
 
         // data length
         $data_length = \strlen($data);
@@ -140,14 +148,20 @@ class Lzw implements \Com\Tecnick\Pdf\Filter\Type\Template
             $state['decoded'] .= $dic_val;
         }
 
-        $state['dictionary'][$state['dix']] = $dic_val;
-        ++$state['dix'];
-        $state['bitlen'] = match ($state['dix']) {
-            2047 => 12,
-            1023 => 11,
-            511 => 10,
-            default => $state['bitlen'],
-        };
+        // Stop growing once the 12-bit code space (4096 entries) is exhausted: further
+        // codes are unaddressable and a well-formed stream emits a clear code (256) first.
+        if ($state['dix'] < 4096) {
+            $state['dictionary'][$state['dix']] = $dic_val;
+            ++$state['dix'];
+            // With early change the width grows one code early (PDF default); the
+            // EarlyChange=0 offset shifts each threshold up by one.
+            $state['bitlen'] = match ($state['dix'] + $this->earlyChange) {
+                2048 => 12,
+                1024 => 11,
+                512 => 10,
+                default => $state['bitlen'],
+            };
+        }
 
         return $state;
     }

@@ -26,8 +26,7 @@
     ],
     "require": {
         "php": ">=8.2",
-        "ext-zlib": "*",
-        "ext-pcre": "*"
+        "ext-zlib": "*"
     },
     "minimum-stability": "stable",
     "prefer-stable": true,

@@ -58,7 +58,7 @@ class RunLength implements \Com\Tecnick\Pdf\Filter\Type\Template
             // get current byte value
             $byte = \ord($data[$idx]);
             if ($byte === 128) {
-                // a length value of 128 denote EOD
+                // a length value of 128 denotes EOD
                 break;
             }
 

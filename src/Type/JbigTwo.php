@@ -23,7 +23,7 @@ use Com\Tecnick\Pdf\Filter\Exception as PPException;
 /**
  * Com\Tecnick\Pdf\Filter\Type\JbigTwo
  *
- * JBIG2Decode filter (PDF 32000-2008 §7.4.9).
+ * JBIG2Decode filter (PDF 32000-2008 §7.4.7).
  * Decompresses JBIG2-encoded bi-level image data by shelling out to the
  * jbig2dec CLI tool (https://jbig2dec.sourceforge.net/), which must be
  * installed and on PATH. If the tool is unavailable a PPException is thrown.

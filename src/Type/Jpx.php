@@ -23,7 +23,7 @@ use Com\Tecnick\Pdf\Filter\Exception as PPException;
 /**
  * Com\Tecnick\Pdf\Filter\Type\Jpx
  *
- * JPXDecode filter (PDF 32000-2008 §7.4.10).
+ * JPXDecode filter (PDF 32000-2008 §7.4.9).
  * Decompresses JPEG 2000 (JP2/JPX) encoded image data using the Imagick
  * extension (ext-imagick). If Imagick is not available a PPException is thrown.
  *

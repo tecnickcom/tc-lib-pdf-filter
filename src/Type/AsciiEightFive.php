@@ -165,6 +165,8 @@ class AsciiEightFive implements \Com\Tecnick\Pdf\Filter\Type\Template
      * Get last tuple
      *
      * @return string Decoded data string.
+     *
+     * @throws \Com\Tecnick\Pdf\Filter\Exception
      */
     protected function getLastTuple(int $group_pos, int $tuple): string
     {

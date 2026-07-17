@@ -19,9 +19,9 @@ declare(strict_types=1);
 namespace Com\Tecnick\Pdf\Filter\Type;
 
 /**
- * Com\Tecnick\Pdf\Filter\Type\Template.php
+ * Com\Tecnick\Pdf\Filter\Type\Template
  *
- * Template.php
+ * Interface implemented by all filter decoders (defines the decode() method).
  *
  * @since     2011-05-23
  * @category  Library

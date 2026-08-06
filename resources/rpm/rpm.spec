@@ -18,6 +18,8 @@ Requires:  php(language) >= 8.2.0
 Requires:  php-pcre
 Requires:  php-zlib
 
+Recommends: php-pecl-imagick
+
 Provides:  php-composer(%{c_vendor}/%{gh_project}) = %{version}
 Provides:  php-%{gh_project} = %{version}
 

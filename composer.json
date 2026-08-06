@@ -26,6 +26,7 @@
     ],
     "require": {
         "php": ">=8.2",
+        "ext-pcre": "*",
         "ext-zlib": "*"
     },
     "minimum-stability": "stable",
@@ -45,7 +46,7 @@
         }
     },
     "suggest": {
-        "ext-imagick": "Required for JPXDecode (JPEG 2000) filter support"
+        "ext-imagick": "Required for the JPXDecode (JPEG 2000) and CCITTFaxDecode filters"
     },
     "support": {
         "issues": "https://github.com/tecnickcom/tc-lib-pdf-filter/issues",

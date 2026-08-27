@@ -1074,6 +1074,8 @@ class TypeDecodeEdgeCasesTest extends TestUtil
      *
      * The test runs in a separate process: the JIT does not honour the backtrack
      * limit, and turning it off only affects patterns compiled afterwards.
+     * The limits are restored before returning, as PHPUnit itself calls
+     * preg_replace() after the test method.
      *
      * @mago-expect lint:no-ini-set
      */
@@ -1084,21 +1086,26 @@ class TypeDecodeEdgeCasesTest extends TestUtil
         \ini_set('pcre.jit', '0');
         \ini_set('pcre.backtrack_limit', '1');
 
-        $hex = new \Com\Tecnick\Pdf\Filter\Type\AsciiHex();
-        $a85 = new \Com\Tecnick\Pdf\Filter\Type\AsciiEightFive();
-        $spaces = \str_repeat(' ', 4096) . '41';
+        try {
+            $hex = new \Com\Tecnick\Pdf\Filter\Type\AsciiHex();
+            $a85 = new \Com\Tecnick\Pdf\Filter\Type\AsciiEightFive();
+            $spaces = \str_repeat(' ', 4096) . '41';
 
-        $this->assertThrows(
-            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
-            'invalid code: white-space removal failed',
-            static fn(): mixed => $hex->decode($spaces . '>'),
-        );
+            $this->assertThrows(
+                '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+                'invalid code: white-space removal failed',
+                static fn(): mixed => $hex->decode($spaces . '>'),
+            );
 
-        $this->assertThrows(
-            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
-            'invalid code: white-space removal failed',
-            static fn(): mixed => $a85->decode($spaces . '~>'),
-        );
+            $this->assertThrows(
+                '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+                'invalid code: white-space removal failed',
+                static fn(): mixed => $a85->decode($spaces . '~>'),
+            );
+        } finally {
+            \ini_restore('pcre.backtrack_limit');
+            \ini_restore('pcre.jit');
+        }
     }
 
     public function testLzwDecodesSelfReferentialCodes(): void

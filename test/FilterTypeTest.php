@@ -77,6 +77,47 @@ class FilterTypeTest extends TestUtil
     }
 
     /**
+     * Inline images abbreviate the filter names (PDF 32000-1:2008, Table 93).
+     *
+     * @throws \Com\Tecnick\Pdf\Filter\Exception
+     */
+    public function testFromLooseResolvesInlineImageAbbreviations(): void
+    {
+        $this->assertSame(FilterType::AsciiHexDecode, FilterType::fromLoose('AHx'));
+        $this->assertSame(FilterType::Ascii85Decode, FilterType::fromLoose('A85'));
+        $this->assertSame(FilterType::LzwDecode, FilterType::fromLoose('LZW'));
+        $this->assertSame(FilterType::FlateDecode, FilterType::fromLoose('Fl'));
+        $this->assertSame(FilterType::RunLengthDecode, FilterType::fromLoose('RL'));
+        $this->assertSame(FilterType::CcittFaxDecode, FilterType::fromLoose('CCF'));
+        $this->assertSame(FilterType::DctDecode, FilterType::fromLoose('DCT'));
+    }
+
+    /**
+     * A PDF name object carries a leading solidus.
+     *
+     * @throws \Com\Tecnick\Pdf\Filter\Exception
+     */
+    public function testFromLooseStripsTheLeadingSolidus(): void
+    {
+        $this->assertSame(FilterType::FlateDecode, FilterType::fromLoose('/FlateDecode'));
+        $this->assertSame(FilterType::FlateDecode, FilterType::fromLoose('/Fl'));
+    }
+
+    /**
+     * Abbreviations are case sensitive too, and only one solidus is stripped.
+     *
+     * @throws \Com\Tecnick\Pdf\Filter\Exception
+     */
+    public function testFromLooseRejectsMalformedAbbreviations(): void
+    {
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'unknown filter: //Fl',
+            static fn(): mixed => FilterType::fromLoose('//Fl'),
+        );
+    }
+
+    /**
      * @throws \Com\Tecnick\Pdf\Filter\Exception
      */
     public function testFromLooseUnknownThrows(): void
@@ -130,5 +171,14 @@ class FilterTypeTest extends TestUtil
         $filter = new Filter();
         $code = '74 63 2D 6C 69 62 2D 70 64 66 2D 66 69 6C 74 65 72>';
         $this->assertEquals('tc-lib-pdf-filter', $filter->decodeAll([FilterType::AsciiHexDecode], $code));
+
+        // a chain may mix the two forms, including the abbreviated names
+        $inner = (string) \gzcompress('tc-lib-pdf-filter');
+        $chained = \strtoupper(\bin2hex($inner)) . '>';
+        $this->assertEquals('tc-lib-pdf-filter', $filter->decodeAll([FilterType::AsciiHexDecode, 'Fl'], $chained));
+        $this->assertEquals('tc-lib-pdf-filter', $filter->decodeAll(
+            ['ASCIIHexDecode', FilterType::FlateDecode],
+            $chained,
+        ));
     }
 }

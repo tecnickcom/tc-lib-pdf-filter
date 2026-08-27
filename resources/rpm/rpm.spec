@@ -9,7 +9,7 @@ Version:   %{_version}
 Release:   %{_release}%{?dist}
 Summary:   PHP library to decode PDF compression and encryption filters
 
-License:   LGPLv3+
+License:   LGPL-3.0-or-later
 URL:       https://github.com/%{gh_owner}/%{gh_project}
 
 BuildArch: noarch
@@ -19,6 +19,7 @@ Requires:  php-pcre
 Requires:  php-zlib
 
 Recommends: php-pecl-imagick
+Suggests:  jbig2dec
 
 Provides:  php-composer(%{c_vendor}/%{gh_project}) = %{version}
 Provides:  php-%{gh_project} = %{version}
@@ -40,7 +41,9 @@ rm -rf "%{buildroot}"
 # Optional config files can be listed here when used by a project.
 
 %changelog
+* %{_builddate} Nicola Asuni <info@tecnick.com> %{version}-%{release}
+- Refer to the project git history for the contents of this release.
 * Thu Jul 02 2026 Nicola Asuni <info@tecnick.com> 1.1.0-1
 - Changed package name, add provides section
-* Tue May 06 2026 Nicola Asuni <info@tecnick.com> 1.0.0-1
+* Wed May 06 2026 Nicola Asuni <info@tecnick.com> 1.0.0-1
 - Initial Commit

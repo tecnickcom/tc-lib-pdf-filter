@@ -14,5 +14,6 @@ Provides: php-~#PROJECT#~
 Architecture: all
 Depends: php (>= 8.2.0), ${misc:Depends}
 Recommends: php-imagick
+Suggests: jbig2dec
 Description: PHP PDF Filter Library
  PHP library to decode PDF compression and encryption filters.

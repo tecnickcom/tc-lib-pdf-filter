@@ -16,6 +16,17 @@
 
 namespace Test;
 
+/**
+ * Filter decoder runtime branch test
+ *
+ * @since     2026-04-30
+ * @category  Library
+ * @package   PdfFilter
+ * @author    Nicola Asuni <info@tecnick.com>
+ * @copyright 2011-2026 Nicola Asuni - Tecnick.com LTD
+ * @license   https://www.gnu.org/copyleft/lesser.html GNU-LGPL v3 (see LICENSE)
+ * @link      https://github.com/tecnickcom/tc-lib-pdf-filter
+ */
 class TypeRuntimeBranchTest extends TestUtil
 {
     private function readUInt16(string $data, int $offset, bool $littleEndian): int
@@ -113,10 +124,13 @@ class TypeRuntimeBranchTest extends TestUtil
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$enabled = true;
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$imagickLoaded = false;
 
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
-
         $obj = new \Com\Tecnick\Pdf\Filter\Type\Jpx();
-        $obj->decode('not-empty');
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'JPXDecode requires the Imagick PHP extension',
+            static fn(): mixed => $obj->decode('not-empty'),
+        );
     }
 
     public function testCcittFaxMissingImagickPathViaShim(): void
@@ -124,10 +138,13 @@ class TypeRuntimeBranchTest extends TestUtil
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$enabled = true;
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$imagickLoaded = false;
 
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
-
         $obj = new \Com\Tecnick\Pdf\Filter\Type\CcittFax();
-        $obj->decode('not-empty');
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'CCITTFaxDecode requires the Imagick PHP extension',
+            static fn(): mixed => $obj->decode('not-empty'),
+        );
     }
 
     public function testCcittFaxSuccessPathWithGeneratedCcittData(): void
@@ -167,16 +184,38 @@ class TypeRuntimeBranchTest extends TestUtil
         $this->assertStringStartsWith("\x89PNG", $decoded);
     }
 
+    /**
+     * JbigTwo::decode() throws the same class from six places, so the message is
+     * what tells the missing-tool path apart from the tool-failed one.
+     */
+    public function testJbigTwoMissingToolPathViaShim(): void
+    {
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$enabled = true;
+        // "command -v jbig2dec" finds nothing
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$shellExecOutput = '';
+
+        $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'JBIG2Decode requires the jbig2dec CLI tool to be installed and on PATH',
+            static fn(): mixed => $obj->decode('payload'),
+        );
+    }
+
     public function testJbigTwoTempFileCreationFailure(): void
     {
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$enabled = true;
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$shellExecOutput = '/usr/bin/jbig2dec';
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$tempnamFail = true;
 
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
-
         $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
-        $obj->decode('payload');
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'failed to create temporary files',
+            static fn(): mixed => $obj->decode('payload'),
+        );
     }
 
     public function testJbigTwoLaunchFailure(): void
@@ -186,10 +225,13 @@ class TypeRuntimeBranchTest extends TestUtil
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$tempnamSequence = ['/tmp/jbig2in_mock', '/tmp/jbig2out_mock'];
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$procOpenFail = true;
 
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
-
         $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
-        $obj->decode('payload');
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'failed to launch jbig2dec',
+            static fn(): mixed => $obj->decode('payload'),
+        );
     }
 
     public function testJbigTwoExitCodeFailure(): void
@@ -198,26 +240,32 @@ class TypeRuntimeBranchTest extends TestUtil
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$shellExecOutput = '/usr/bin/jbig2dec';
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$tempnamSequence = ['/tmp/jbig2in_mock', '/tmp/jbig2out_mock'];
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$procCloseCode = 1;
-        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$fileExists = true;
-
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
 
         $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
-        $obj->decode('payload');
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'jbig2dec failed to decode the stream',
+            static fn(): mixed => $obj->decode('payload'),
+        );
     }
 
-    public function testJbigTwoMissingOutputFileFailure(): void
+    public function testJbigTwoEmptyOutputFailure(): void
     {
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$enabled = true;
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$shellExecOutput = '/usr/bin/jbig2dec';
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$tempnamSequence = ['/tmp/jbig2in_mock', '/tmp/jbig2out_mock'];
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$procCloseCode = 0;
-        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$fileExists = false;
-
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
+        // tempnam() already created the output file, so "no output" surfaces as empty content
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$fileGetContents = '';
 
         $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
-        $obj->decode('payload');
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'jbig2dec produced no output',
+            static fn(): mixed => $obj->decode('payload'),
+        );
     }
 
     public function testJbigTwoOutputReadFailure(): void
@@ -226,13 +274,15 @@ class TypeRuntimeBranchTest extends TestUtil
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$shellExecOutput = '/usr/bin/jbig2dec';
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$tempnamSequence = ['/tmp/jbig2in_mock', '/tmp/jbig2out_mock'];
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$procCloseCode = 0;
-        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$fileExists = true;
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$fileGetContents = false;
 
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
-
         $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
-        $obj->decode('payload');
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'failed to read jbig2dec output',
+            static fn(): mixed => $obj->decode('payload'),
+        );
     }
 
     public function testJbigTwoSuccessPathViaShim(): void
@@ -241,7 +291,6 @@ class TypeRuntimeBranchTest extends TestUtil
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$shellExecOutput = '/usr/bin/jbig2dec';
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$tempnamSequence = ['/tmp/jbig2in_mock', '/tmp/jbig2out_mock'];
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$procCloseCode = 0;
-        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$fileExists = true;
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$fileGetContents = 'decoded-ok';
 
         $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
@@ -254,6 +303,27 @@ class TypeRuntimeBranchTest extends TestUtil
         );
     }
 
+    /**
+     * tempnam() creates the file it names, so a failure on the second call must
+     * still remove the one the first call left on disk.
+     */
+    public function testJbigTwoOutputTempFileCreationFailureRemovesTheInputFile(): void
+    {
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$enabled = true;
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$shellExecOutput = '/usr/bin/jbig2dec';
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$tempnamSequence = ['/tmp/jbig2in_mock', false];
+
+        $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'failed to create temporary files',
+            static fn(): mixed => $obj->decode('payload'),
+        );
+
+        $this->assertSame(['/tmp/jbig2in_mock'], \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$unlinked);
+    }
+
     public function testJbigTwoInputWriteFailure(): void
     {
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$enabled = true;
@@ -261,10 +331,13 @@ class TypeRuntimeBranchTest extends TestUtil
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$tempnamSequence = ['/tmp/jbig2in_mock', '/tmp/jbig2out_mock'];
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$putResult = false;
 
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
-
         $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
-        $obj->decode('payload');
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'failed to write temporary input file',
+            static fn(): mixed => $obj->decode('payload'),
+        );
     }
 
     public function testJbigTwoGlobalsSuccessPathViaShim(): void
@@ -277,17 +350,98 @@ class TypeRuntimeBranchTest extends TestUtil
             '/tmp/jbig2glob_mock',
         ];
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$procCloseCode = 0;
-        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$fileExists = true;
         \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$fileGetContents = 'decoded-ok';
 
         $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
         $result = $obj->decode('payload', ['JBIG2Globals' => 'shared-segments']);
 
         $this->assertSame('decoded-ok', $result);
-        // The globals temp file is created and cleaned up alongside the in/out files.
+        // the globals temp file is created and cleaned up alongside the in/out files
         $this->assertSame(
             ['/tmp/jbig2in_mock', '/tmp/jbig2out_mock', '/tmp/jbig2glob_mock'],
             \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$unlinked,
         );
+
+        $commands = \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$procCommands;
+        $this->assertCount(1, $commands);
+        // -e selects embedded-stream mode, which is the form a PDF JBIG2Decode
+        // stream takes: without it no real stream decodes
+        $this->assertStringContainsString('jbig2dec -e ', $commands[0]);
+        // the decoded page goes to the output file...
+        $this->assertStringContainsString("-o '/tmp/jbig2out_mock'", $commands[0]);
+        // ...and the globals stream must precede the page stream
+        $this->assertLessThan(
+            (int) \strpos($commands[0], "'/tmp/jbig2in_mock'"),
+            (int) \strpos($commands[0], "'/tmp/jbig2glob_mock'"),
+        );
+    }
+
+    public function testJbigTwoGlobalsTempFileCreationFailure(): void
+    {
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$enabled = true;
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$shellExecOutput = '/usr/bin/jbig2dec';
+        // the third tempnam() call - the one for the globals file - fails
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$tempnamSequence = [
+            '/tmp/jbig2in_mock',
+            '/tmp/jbig2out_mock',
+            false,
+        ];
+
+        $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'failed to create temporary files',
+            static fn(): mixed => $obj->decode('payload', ['JBIG2Globals' => 'shared-segments']),
+        );
+    }
+
+    public function testJbigTwoGlobalsWriteFailure(): void
+    {
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$enabled = true;
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$shellExecOutput = '/usr/bin/jbig2dec';
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$tempnamSequence = [
+            '/tmp/jbig2in_mock',
+            '/tmp/jbig2out_mock',
+            '/tmp/jbig2glob_mock',
+        ];
+        // the input file is written first; only the globals write fails
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$putSequence = [1, false];
+
+        $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'failed to write temporary globals file',
+            static fn(): mixed => $obj->decode('payload', ['JBIG2Globals' => 'shared-segments']),
+        );
+
+        // writeGlobals() throws before returning the path, so decode()'s own
+        // finally cannot see it: the file is cleaned up there or not at all
+        $this->assertContains('/tmp/jbig2glob_mock', \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$unlinked);
+    }
+
+    public function testJbigTwoEmptyGlobalsIsTreatedAsNoGlobals(): void
+    {
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$enabled = true;
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$shellExecOutput = '/usr/bin/jbig2dec';
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$tempnamSequence = [
+            '/tmp/jbig2in_mock',
+            '/tmp/jbig2out_mock',
+            '/tmp/jbig2glob_mock',
+        ];
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$procCloseCode = 0;
+        \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$fileGetContents = 'decoded-ok';
+
+        $obj = new \Com\Tecnick\Pdf\Filter\Type\JbigTwo();
+        $this->assertSame('decoded-ok', $obj->decode('payload', ['JBIG2Globals' => '']));
+
+        // no globals file is created, so none is passed on the command line
+        $this->assertSame(
+            ['/tmp/jbig2in_mock', '/tmp/jbig2out_mock'],
+            \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$unlinked,
+        );
+        $commands = \Com\Tecnick\Pdf\Filter\Type\RuntimeShim::$procCommands;
+        $this->assertStringNotContainsString('jbig2glob_mock', $commands[0]);
     }
 }

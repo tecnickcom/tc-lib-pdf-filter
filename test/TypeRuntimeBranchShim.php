@@ -38,13 +38,25 @@ final class RuntimeShim
 
     public static int $procCloseCode = 0;
 
-    public static bool $fileExists = true;
-
     /** @var string|false */
     public static $fileGetContents = 'decoded-data';
 
     /** @var int|false */
     public static $putResult = 1;
+
+    /**
+     * Per-call results for file_put_contents(), consumed in order before $putResult.
+     *
+     * @var array<int, int|false>
+     */
+    public static array $putSequence = [];
+
+    /**
+     * Command lines passed to proc_open().
+     *
+     * @var array<int, string>
+     */
+    public static array $procCommands = [];
 
     /**
      * @var array<int, string>
@@ -60,9 +72,10 @@ final class RuntimeShim
         self::$tempnamSequence = [];
         self::$procOpenFail = false;
         self::$procCloseCode = 0;
-        self::$fileExists = true;
         self::$fileGetContents = 'decoded-data';
         self::$putResult = 1;
+        self::$putSequence = [];
+        self::$procCommands = [];
         self::$unlinked = [];
     }
 }
@@ -134,6 +147,8 @@ function proc_open(
     ?array $options = null,
 ): mixed {
     if (RuntimeShim::$enabled) {
+        RuntimeShim::$procCommands[] = $command;
+
         if (RuntimeShim::$procOpenFail) {
             return false;
         }
@@ -167,15 +182,6 @@ function proc_close(mixed $process): int
     }
 
     return \proc_close($process);
-}
-
-function file_exists(string $filename): bool
-{
-    if (RuntimeShim::$enabled) {
-        return RuntimeShim::$fileExists;
-    }
-
-    return \file_exists($filename);
 }
 
 /**
@@ -212,6 +218,13 @@ function file_get_contents(
 function file_put_contents(string $filename, mixed $data, int $flags = 0, mixed $context = null): int|false
 {
     if (RuntimeShim::$enabled) {
+        if (RuntimeShim::$putSequence !== []) {
+            $next = RuntimeShim::$putSequence[0];
+            unset(RuntimeShim::$putSequence[0]);
+            RuntimeShim::$putSequence = array_values(RuntimeShim::$putSequence);
+            return $next;
+        }
+
         return RuntimeShim::$putResult;
     }
 

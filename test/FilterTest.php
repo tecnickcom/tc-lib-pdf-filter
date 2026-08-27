@@ -17,7 +17,7 @@
 namespace Test;
 
 /**
- * Filter Test
+ * Filter class test
  *
  * @since     2011-05-23
  * @category  Library
@@ -43,9 +43,26 @@ class FilterTest extends TestUtil
 
     public function testUnknownnFilter(): void
     {
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
         $filter = $this->getTestObject();
-        $filter->decode('Unknownn', 'YZ');
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'unknown filter: Unknownn',
+            static fn(): mixed => $filter->decode('Unknownn', 'YZ'),
+        );
+    }
+
+    /**
+     * A /Filter value read straight out of a PDF carries its leading solidus.
+     */
+    public function testDecodeAcceptsANameObjectWithSolidus(): void
+    {
+        $filter = $this->getTestObject();
+        $payload = (string) gzcompress('tc-lib-pdf-filter');
+
+        $this->assertSame('tc-lib-pdf-filter', $filter->decode('/FlateDecode', $payload));
+        // the inline-image abbreviation takes a solidus too
+        $this->assertSame('tc-lib-pdf-filter', $filter->decode('/Fl', $payload));
     }
 
     public function testAsciiHex(): void
@@ -59,8 +76,8 @@ class FilterTest extends TestUtil
         $result = $filter->decode('ASCIIHexDecode', $code);
         $this->assertEquals('tc-lib-pdf-filter', $result);
 
-        // Odd number of hex digits before EOD: a trailing 0 is appended to the
-        // last digit (PDF 32000-1:2008 §7.4.2), so "9" becomes byte 0x90.
+        // odd number of hex digits before EOD: a trailing 0 is appended to the
+        // last digit (PDF 32000-1:2008 §7.4.2), so "9" becomes byte 0x90
         $code = '30 31 32 33 34 35 36 37 38 39 9>';
         $result = $filter->decode('ASCIIHexDecode', $code);
         $this->assertEquals('0123456789' . \chr(0x90), $result);
@@ -68,17 +85,26 @@ class FilterTest extends TestUtil
 
     public function testAsciiHexEx(): void
     {
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
         $filter = $this->getTestObject();
         $code = '30 31 32 33 34 35 36 37 38 39 9';
-        $filter->decode('ASCIIHexDecode', $code);
+
+        // without the EOD there is nothing to imply the missing final digit
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'invalid code: odd number of hexadecimal digits without EOD',
+            static fn(): mixed => $filter->decode('ASCIIHexDecode', $code),
+        );
     }
 
     public function testAsciiHexException(): void
     {
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
         $filter = $this->getTestObject();
-        $filter->decode('ASCIIHexDecode', 'YZ 34 HJ>');
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'invalid code: character outside the hexadecimal alphabet',
+            static fn(): mixed => $filter->decode('ASCIIHexDecode', 'YZ 34 HJ>'),
+        );
     }
 
     public function testAsciiEightFive(): void
@@ -102,9 +128,13 @@ class FilterTest extends TestUtil
 
     public function testAsciiEightFiveEx(): void
     {
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
         $filter = $this->getTestObject();
-        $filter->decode('ASCII85Decode', \chr(254));
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'invalid code: character outside the ASCII85 alphabet',
+            static fn(): mixed => $filter->decode('ASCII85Decode', \chr(254)),
+        );
     }
 
     public function testFlate(): void
@@ -145,9 +175,13 @@ class FilterTest extends TestUtil
 
     public function testFlateEx(): void
     {
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
         $filter = $this->getTestObject();
-        $filter->decode('FlateDecode', 'ABC');
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'invalid code',
+            static fn(): mixed => $filter->decode('FlateDecode', 'ABC'),
+        );
     }
 
     public function testRunLength(): void
@@ -160,20 +194,9 @@ class FilterTest extends TestUtil
 
     public function testCcittFaxEmptyInput(): void
     {
-        // Empty input must return '' regardless of whether Imagick is loaded.
+        // empty input must return '' regardless of whether Imagick is loaded
         $filter = $this->getTestObject();
         $this->assertSame('', $filter->decode('CCITTFaxDecode', ''));
-    }
-
-    public function testCcittFaxNoImagemagick(): void
-    {
-        if (extension_loaded('imagick')) {
-            $this->markTestSkipped('ext-imagick is loaded; cannot test missing-extension path');
-        }
-
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
-        $filter = $this->getTestObject();
-        $filter->decode('CCITTFaxDecode', 'data', ['Columns' => 1728]);
     }
 
     public function testCcittFax(): void
@@ -182,36 +205,40 @@ class FilterTest extends TestUtil
             $this->markTestSkipped('ext-imagick is not available');
         }
 
-        // Verify that parameters are accepted and passed through to the constructor.
-        // Depending on the ImageMagick build, malformed CCITT payloads may either
-        // fail with an exception or decode into a PNG with best-effort recovery.
+        // Group 4 stream for a 64x8 image, left half black and right half white
+        $ccittData = "\x23\x60\xD5\xFF\xF8\x00\x80\x08";
+
         $filter = $this->getTestObject();
 
         try {
-            $result = $filter->decode('CCITTFaxDecode', 'invalid-data', ['Columns' => 8, 'Rows' => 8]);
-            $this->assertStringStartsWith("\x89PNG", $result);
+            $result = $filter->decode('CCITTFaxDecode', $ccittData, [
+                'K' => -1,
+                'Columns' => 64,
+                'Rows' => 8,
+            ]);
         } catch (\Com\Tecnick\Pdf\Filter\Exception $e) {
-            // Expected on stricter ImageMagick builds.
-            $this->assertStringContainsString('CCITTFaxDecode', $e->getMessage());
+            if (str_contains($e->getMessage(), 'no decode delegate')) {
+                $this->markTestSkipped('Imagick is available but the TIFF/CCITT decode delegate is missing');
+            }
+
+            throw $e;
         }
+
+        $this->assertStringStartsWith("\x89PNG", $result);
+
+        $image = new \Imagick();
+        $image->readImageBlob($result);
+        $this->assertSame(64, $image->getImageWidth());
+        $this->assertSame(8, $image->getImageHeight());
+        $this->assertSame('srgb(0,0,0)', $image->getImagePixelColor(5, 4)->getColorAsString());
+        $this->assertSame('srgb(255,255,255)', $image->getImagePixelColor(50, 4)->getColorAsString());
     }
 
     public function testJbigTwoEmptyInput(): void
     {
-        // Empty input must return '' regardless of whether jbig2dec is installed.
+        // empty input must return '' regardless of whether jbig2dec is installed
         $filter = $this->getTestObject();
         $this->assertSame('', $filter->decode('JBIG2Decode', ''));
-    }
-
-    public function testJbigTwoNoTool(): void
-    {
-        if (trim((string) shell_exec('command -v jbig2dec 2>/dev/null')) !== '') {
-            $this->markTestSkipped('jbig2dec is installed; cannot test missing-tool path');
-        }
-
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
-        $filter = $this->getTestObject();
-        $filter->decode('JBIG2Decode', 'data');
     }
 
     public function testJbigTwo(): void
@@ -220,16 +247,18 @@ class FilterTest extends TestUtil
             $this->markTestSkipped('jbig2dec is not installed');
         }
 
-        // A minimal but valid JBIG2 stream would be needed here.
-        // Until a fixture is available, verify that an invalid stream throws.
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
+        // the input is not valid JBIG2, so jbig2dec fails
         $filter = $this->getTestObject();
-        $filter->decode('JBIG2Decode', 'invalid-jbig2-data');
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'jbig2dec failed to decode the stream',
+            static fn(): mixed => $filter->decode('JBIG2Decode', 'invalid-jbig2-data'),
+        );
     }
 
     public function testDct(): void
     {
-        // DCT streams are self-contained JPEG files; the filter is a pass-through.
+        // DCT streams are self-contained JPEG files; the filter is a pass-through
         $filter = $this->getTestObject();
         $jpeg = "\xFF\xD8\xFF\xE0\x00\x10JFIF\x00";
         $this->assertSame($jpeg, $filter->decode('DCTDecode', $jpeg));
@@ -238,20 +267,9 @@ class FilterTest extends TestUtil
 
     public function testJpxEmptyInput(): void
     {
-        // Empty input must return '' regardless of whether Imagick is loaded.
+        // empty input must return '' regardless of whether Imagick is loaded
         $filter = $this->getTestObject();
         $this->assertSame('', $filter->decode('JPXDecode', ''));
-    }
-
-    public function testJpxNoImagick(): void
-    {
-        if (extension_loaded('imagick')) {
-            $this->markTestSkipped('ext-imagick is loaded; cannot test missing-extension path');
-        }
-
-        $this->bcExpectException('\\' . \Com\Tecnick\Pdf\Filter\Exception::class);
-        $filter = $this->getTestObject();
-        $filter->decode('JPXDecode', 'data');
     }
 
     public function testJpx(): void
@@ -260,7 +278,7 @@ class FilterTest extends TestUtil
             $this->markTestSkipped('ext-imagick is not available');
         }
 
-        // Minimal 1x1 white JP2 fixture generated with Imagick.
+        // minimal 1x1 white JP2 fixture generated with Imagick
         $jp2 =
             "\x00\x00\x00\x0c\x6a\x50\x20\x20\x0d\x0a\x87\x0a\x00\x00\x00\x14\x66\x74\x79\x70\x6a\x70\x32\x20"
             . "\x00\x00\x00\x00\x6a\x70\x32\x20\x00\x00\x00\x2d\x6a\x70\x32\x68\x00\x00\x00\x16\x69\x68\x64\x72"
@@ -274,13 +292,13 @@ class FilterTest extends TestUtil
 
         $filter = $this->getTestObject();
         $result = $filter->decode('JPXDecode', $jp2);
-        // Output is a PNG blob; verify it starts with the PNG signature.
+        // output is a PNG blob; verify it starts with the PNG signature
         $this->assertStringStartsWith("\x89PNG", $result);
     }
 
     public function testCrypt(): void
     {
-        // Without key material the Crypt filter acts as Identity (pass-through).
+        // without a Name the Crypt filter acts as Identity (pass-through)
         $filter = $this->getTestObject();
         $this->assertSame('data', $filter->decode('Crypt', 'data'));
         $this->assertSame('', $filter->decode('Crypt', ''));
@@ -299,5 +317,94 @@ class FilterTest extends TestUtil
         $expected = "BT\n/F1 30 Tf 350 750 Td 20 TL\n1 Tr (Hello world) Tj \nET";
         $result = $filter->decodeAll(['ASCIIHexDecode', 'LZWDecode', 'ASCII85Decode'], $code);
         $this->assertEquals($expected, $result);
+    }
+
+    public function testDecodeAllWithNoFiltersReturnsTheDataUnchanged(): void
+    {
+        $filter = $this->getTestObject();
+
+        $this->assertSame('tc-lib-pdf-filter', $filter->decodeAll([], 'tc-lib-pdf-filter'));
+        $this->assertSame('tc-lib-pdf-filter', $filter->decodeAll([], 'tc-lib-pdf-filter', ['Predictor' => 12]));
+    }
+
+    public function testDecodeAllBroadcastsASingleDecodeParmsDictionary(): void
+    {
+        $filter = $this->getTestObject();
+        $payload = (string) gzcompress(str_repeat('A', 512));
+
+        // a dictionary (string keys) applies to every filter in the chain
+        $this->assertSame(512, strlen($filter->decodeAll(['FlateDecode'], $payload, ['MaxOutputSize' => 512])));
+
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'MaxOutputSize of 16 bytes',
+            static fn(): mixed => $filter->decodeAll(['FlateDecode'], $payload, ['MaxOutputSize' => 16]),
+        );
+    }
+
+    /**
+     * A PDF dictionary is keyed by name objects, so a non-empty list is the
+     * /DecodeParms array form, whatever its entries hold.
+     */
+    public function testDecodeAllTreatsAnyListAsPositionalDecodeParms(): void
+    {
+        $filter = $this->getTestObject();
+        $payload = (string) gzcompress(str_repeat('A', 512));
+
+        // the second entry is malformed; the first still caps FlateDecode
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'MaxOutputSize of 16 bytes',
+            static fn(): mixed => $filter->decodeAll(['FlateDecode'], $payload, [['MaxOutputSize' => 16], 'junk']),
+        );
+
+        // an entry that is not a dictionary leaves its filter without parameters
+        $this->assertSame(512, strlen($filter->decodeAll(['FlateDecode'], $payload, ['junk'])));
+    }
+
+    public function testDecodeAllPositionalDecodeParmsMayBeShorterThanTheChain(): void
+    {
+        $filter = $this->getTestObject();
+        $inner = (string) gzcompress(str_repeat('A', 512));
+        $code = strtoupper(bin2hex($inner)) . '>';
+
+        // one entry for two filters: FlateDecode simply gets no parameters
+        $this->assertSame(512, strlen($filter->decodeAll(['ASCIIHexDecode', 'FlateDecode'], $code, [null])));
+    }
+
+    public function testDecodeAllAppliesPositionalDecodeParms(): void
+    {
+        $filter = $this->getTestObject();
+
+        // /DecodeParms may be an array parallel to /Filter, one entry per filter:
+        // here only the second filter (FlateDecode) gets a budget, and a null
+        // entry leaves the corresponding filter with no parameters
+        $inner = (string) gzcompress(str_repeat('A', 512));
+        $code = strtoupper(bin2hex($inner)) . '>';
+
+        $result = $filter->decodeAll(['ASCIIHexDecode', 'FlateDecode'], $code, [null, ['MaxOutputSize' => 512]]);
+        $this->assertSame(str_repeat('A', 512), $result);
+
+        // the same budget in the first position belongs to ASCIIHexDecode, which
+        // ignores it, so Flate stays uncapped and the chain succeeds
+        $uncapped = $filter->decodeAll(['ASCIIHexDecode', 'FlateDecode'], $code, [['MaxOutputSize' => 16], null]);
+        $this->assertSame(512, strlen($uncapped));
+    }
+
+    public function testDecodeAllPositionalDecodeParmsCapTheMatchingFilter(): void
+    {
+        $filter = $this->getTestObject();
+        $inner = (string) gzcompress(str_repeat('A', 512));
+        $code = strtoupper(bin2hex($inner)) . '>';
+
+        // in the second position the budget reaches FlateDecode, which enforces it
+        $this->assertThrows(
+            '\\' . \Com\Tecnick\Pdf\Filter\Exception::class,
+            'MaxOutputSize of 16 bytes',
+            static fn(): mixed => $filter->decodeAll(['ASCIIHexDecode', 'FlateDecode'], $code, [
+                null,
+                ['MaxOutputSize' => 16],
+            ]),
+        );
     }
 }

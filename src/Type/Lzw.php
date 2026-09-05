@@ -161,7 +161,7 @@ class Lzw implements \Com\Tecnick\Pdf\Filter\Type\Template
         }
 
         if ($state['prev_index'] === 256) {
-            $state['decoded'] .= $state['dictionary'][$index] ?? '';
+            $state['decoded'] .= $state['dictionary'][$index];
             $state['prev_index'] = $index;
             $this->guardOutputSize($state['decoded']);
             return;

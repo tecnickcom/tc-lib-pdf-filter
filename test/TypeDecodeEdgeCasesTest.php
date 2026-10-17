@@ -141,10 +141,13 @@ class TypeDecodeEdgeCasesTest extends TestUtil
     private function lzwEncode(string $data, int $earlyChange = 1, bool $clearWhenFull = true): string
     {
         $out = '';
-        $accumulator = 0;
-        $accumulated = 0;
-        $bitlen = 9;
         // the closure below mutates these by reference
+        /** @var int $accumulator */
+        $accumulator = 0;
+        /** @var int $accumulated */
+        $accumulated = 0;
+        /** @var int $bitlen */
+        $bitlen = 9;
         /** @var int $decoderIndex */
         $decoderIndex = 258;
         /** @var bool $afterClear */

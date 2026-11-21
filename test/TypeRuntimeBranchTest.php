@@ -16,6 +16,9 @@
 
 namespace Test;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
+
 /**
  * Filter decoder runtime branch test
  *
@@ -153,14 +156,21 @@ class TypeRuntimeBranchTest extends TestUtil
             $this->markTestSkipped('ext-imagick is not available');
         }
 
-        $img = new \Imagick();
-        $img->newImage(1, 1, 'white');
-        $img->setImageType(\Imagick::IMGTYPE_BILEVEL);
-        $img->setImageDepth(1);
-        $img->setImageCompression(\Imagick::COMPRESSION_GROUP4);
-        $img->setImageFormat('tiff');
+        // ImageMagick resolves the format name with the LC_CTYPE case mapping.
+        $locale = \setlocale(\LC_CTYPE, '0');
+        \setlocale(\LC_CTYPE, 'C');
+        try {
+            $img = new \Imagick();
+            $img->newImage(1, 1, 'white');
+            $img->setImageType(\Imagick::IMGTYPE_BILEVEL);
+            $img->setImageDepth(1);
+            $img->setImageCompression(\Imagick::COMPRESSION_GROUP4);
+            $img->setImageFormat('tiff');
+            $tiffBlob = $img->getImageBlob();
+        } finally {
+            \setlocale(\LC_CTYPE, $locale === false ? 'C' : $locale);
+        }
 
-        $tiffBlob = $img->getImageBlob();
         $ccittData = $this->extractTiffStrip($tiffBlob);
         $this->assertNotSame('', $ccittData);
 
@@ -181,6 +191,37 @@ class TypeRuntimeBranchTest extends TestUtil
             throw $e;
         }
 
+        $this->assertStringStartsWith("\x89PNG", $decoded);
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testCcittFaxRestoresTheLocale(): void
+    {
+        if (!\extension_loaded('imagick')) {
+            $this->markTestSkipped('ext-imagick is not available');
+        }
+
+        $locale = \setlocale(\LC_CTYPE, 'C.UTF-8', 'C.utf8', 'en_US.UTF-8', 'en_GB.UTF-8');
+        if ($locale === false) {
+            $this->markTestSkipped('no UTF-8 locale is installed');
+        }
+
+        $obj = new \Com\Tecnick\Pdf\Filter\Type\CcittFax(['K' => -1, 'Columns' => 64, 'Rows' => 8]);
+        try {
+            $decoded = $obj->decode("\x23\x60\xD5\xFF\xF8\x00\x80\x08");
+        } catch (\Com\Tecnick\Pdf\Filter\Exception $e) {
+            if (str_contains($e->getMessage(), 'no decode delegate')) {
+                $this->markTestSkipped('Imagick is available but the TIFF/CCITT decode delegate is missing');
+            }
+
+            throw $e;
+        } finally {
+            $current = \setlocale(\LC_CTYPE, '0');
+            \setlocale(\LC_CTYPE, 'C');
+        }
+
+        $this->assertSame($locale, $current);
         $this->assertStringStartsWith("\x89PNG", $decoded);
     }
 
